@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>去中心化投票系統</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --glass: rgba(255, 255, 255, 0.1);
+            --text: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: var(--text);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 標題區域 */
+        header {
+            text-align: center;
+            padding: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        h1 { margin: 0; font-size: 2.5rem; letter-spacing: 2px; }
+        p.subtitle { color: var(--secondary); margin-top: 0.5rem; }
+
+        /* 卡片容器樣式 (玻璃擬態) */
+        .container {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 2rem;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover { transform: translateY(-5px); }
+
+        /* 按鈕樣式 */
+        button {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border: none;
+            padding: 10px 20px;
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover { opacity: 0.9; transform: scale(1.02); }
+        button:disabled { background: #555; cursor: not-allowed; }
+
+        /* 輸入框樣式 */
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(0,0,0,0.2);
+            color: white;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        /* 候選人列表 */
+        .candidate-list { list-style: none; padding: 0; }
+        .candidate-item {
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .vote-count { font-weight: bold; color: var(--secondary); }
+
+        /* 狀態顯示 */
+        #status { margin-top: 10px; text-align: center; font-size: 0.9rem; color: #ff7675; }
+        .section-title { border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px; margin-bottom: 15px; }
+
+        /* 隱藏區塊控制 */
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>區塊鏈投票系統</h1>
+        <p class="subtitle">安全．透明．不可竄改</p>
+        <div id="walletAddress" style="margin-top: 10px; font-family: monospace; color: #fab1a0;">尚未連接錢包</div>
+    </header>
+
+    <div id="connectSection" class="container">
+        <h2 class="section-title">步驟 1: 連接錢包</h2>
+        <p>請使用 MetaMask 連接您的帳戶以繼續。</p>
+        <button onclick="connectWallet()">連接 MetaMask</button>
+    </div>
+
+    <div id="registerSection" class="container hidden">
+        <h2 class="section-title">步驟 2: 身份註冊</h2>
+        <p>您尚未註冊。請輸入姓名以獲取投票權。</p>
+        <input type="text" id="userName" placeholder="輸入您的姓名">
+        <button onclick="registerUser()">註冊身份</button>
+    </div>
+
+    <div id="votingSection" class="container hidden">
+        <h2 class="section-title">步驟 3: 候選人列表</h2>
+        <p>請選擇一位候選人進行投票（一人一票）。</p>
+        <ul id="candidateList" class="candidate-list">
+            </ul>
+        <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
+             <h3>目前最高票：<span id="winningInfo" style="color: var(--secondary)">計算中...</span></h3>
+        </div>
+    </div>
+
+    <p id="status"></p>
+
+    <script>
+        // ================= 配置區域 =================
+        // 請在此填入你部署後的合約地址
+        const REGISTRY_ADDRESS = "0xE1b73F860B4bC1aFeBe9Eba625bB229Fc28aCDb1"; 
+        const VOTING_ADDRESS = "0x11F15B42D9dE40Eaf7c0E61bB6bFaBfDc5a5c774";
+        // ===========================================
+
+        let provider;
+        let signer;
+        let registryContract;
+        let votingContract;
+        let userAddress;
+
+        // 簡易 ABI 定義 (根據你提供的 Solidity 檔案內容)
+        // 來源參考: [cite: 24, 25, 26, 27] (UserRegistry) & [cite: 77, 86, 95, 98] (Voting)
+        const RegistryABI = [
+            "function register(string memory _name) public",
+            "function isRegistered(address) public view returns (bool)",
+            "event UserRegistered(address user, string name)"
+        ];
+
+        const VotingABI = [
+            "function vote(uint256 candidateIndex) public",
+            "function getCandidateCount() public view returns (uint256)",
+            "function getCandidate(uint256 index) public view returns (string memory, uint256)",
+            "function hasVoted(address) public view returns (bool)",
+            "function winningCandidate() public view returns (uint256, string memory, uint256)"
+        ];
+
+        async function connectWallet() {
+            try {
+                if (!window.ethereum) return alert("請安裝 MetaMask!");
+                
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+
+                document.getElementById("walletAddress").innerText = `已連接: ${userAddress.substring(0, 6)}...${userAddress.substring(38)}`;
+                document.getElementById("connectSection").classList.add("hidden");
+
+                // 初始化合約
+                registryContract = new ethers.Contract(REGISTRY_ADDRESS, RegistryABI, signer);
+                votingContract = new ethers.Contract(VOTING_ADDRESS, VotingABI, signer);
+
+                checkUserStatus();
+            } catch (err) {
+                console.error(err);
+                showStatus("連接失敗: " + err.message);
+            }
+        }
+
+        // 檢查使用者是否已註冊 [cite: 14]
+        async function checkUserStatus() {
+            try {
+                showStatus("檢查註冊狀態中...");
+                const isRegistered = await registryContract.isRegistered(userAddress);
+
+                if (isRegistered) {
+                    document.getElementById("registerSection").classList.add("hidden");
+                    document.getElementById("votingSection").classList.remove("hidden");
+                    loadCandidates(); // 載入候選人資料
+                } else {
+                    document.getElementById("registerSection").classList.remove("hidden");
+                }
+                showStatus("");
+            } catch (err) {
+                showStatus("檢查狀態失敗，請確認合約地址正確並位於正確的網路上。");
+            }
+        }
+
+        // 使用者註冊功能 [cite: 10, 11]
+        async function registerUser() {
+            const name = document.getElementById("userName").value;
+            if (!name) return alert("請輸入姓名");
+
+            try {
+                showStatus("正在註冊...請在錢包中確認交易");
+                const tx = await registryContract.register(name); // 呼叫合約 register [cite: 24]
+                showStatus("交易發送中...等待區塊確認");
+                await tx.wait();
+                
+                showStatus("註冊成功！");
+                checkUserStatus(); // 重新整理狀態
+            } catch (err) {
+                console.error(err);
+                showStatus("註冊失敗: " + (err.reason || err.message));
+            }
+        }
+
+        // 載入候選人列表與票數 [cite: 34, 40]
+        async function loadCandidates() {
+            const list = document.getElementById("candidateList");
+            list.innerHTML = "載入中...";
+            
+            try {
+                const count = await votingContract.getCandidateCount(); // [cite: 95]
+                let html = "";
+
+                // 檢查該使用者是否已投票 [cite: 61]
+                const hasVoted = await votingContract.hasVoted(userAddress);
+                
+                for (let i = 0; i < count; i++) {
+                    const candidate = await votingContract.getCandidate(i); // 
+                    const name = candidate[0];
+                    const votes = candidate[1].toString();
+
+                    html += `
+                        <li class="candidate-item">
+                            <span>${name}</span>
+                            <div>
+                                <span class="vote-count">${votes} 票</span>
+                                ${!hasVoted ? `<button style="width: auto; margin-left: 10px; font-size: 0.8rem;" onclick="vote(${i})">投票</button>` : '<span style="margin-left:10px; color:#aaa">(已投)</span>'}
+                            </div>
+                        </li>
+                    `;
+                }
+                list.innerHTML = html;
+                updateWinner();
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = "載入候選人失敗";
+            }
+        }
+
+        // 投票功能 [cite: 37, 38]
+        async function vote(index) {
+            try {
+                showStatus(`正在投票給候選人 #${index}...`);
+                const tx = await votingContract.vote(index); // 呼叫合約 vote 
+                showStatus("投票交易確認中...");
+                await tx.wait();
+
+                showStatus("投票成功！");
+                loadCandidates(); // 重新載入列表以更新票數
+            } catch (err) {
+                console.error(err);
+                showStatus("投票失敗: " + (err.reason || err.message));
+            }
+        }
+
+        // 顯示目前最高票 [cite: 40, 98]
+        async function updateWinner() {
+            try {
+                const winner = await votingContract.winningCandidate();
+                document.getElementById("winningInfo").innerText = `${winner[1]} (${winner[2]} 票)`;
+            } catch(err) {
+                console.log("尚無資料");
+            }
+        }
+
+        function showStatus(msg) {
+            document.getElementById("status").innerText = msg;
+        }
+    </script>
+</body>
+</html>
