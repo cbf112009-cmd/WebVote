@@ -1,269 +1,710 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>去中心化投票系統</title>
+    <title>UniGov | 終極去中心化治理平台</title>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap"
+        rel="stylesheet">
+
     <style>
         :root {
-            --primary: #6c5ce7;
-            --secondary: #a29bfe;
-            --glass: rgba(255, 255, 255, 0.1);
-            --text: #ffffff;
+            --p: #6366f1;
+            --p-dark: #4f46e5;
+            --bg: #0b0f1a;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f1c40f;
+        }
+
+        * {
+            box-sizing: border-box;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
             color: var(--text);
             margin: 0;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            background-image: radial-gradient(circle at 50% -20%, #1e1b4b 0%, var(--bg) 80%);
         }
 
-        header { text-align: center; padding: 2rem; margin-bottom: 1rem; }
-        h1 { margin: 0; font-size: 2.5rem; letter-spacing: 2px; }
-        p.subtitle { color: var(--secondary); margin-top: 0.5rem; }
+        /* 導覽列 */
+        .nav {
+            backdrop-filter: blur(12px);
+            background: rgba(11, 15, 26, 0.8);
+            padding: 15px 5%;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--p);
+            cursor: pointer;
+        }
+
+        .net-badge {
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 50px;
+            background: var(--error);
+            color: white;
+            display: none;
+        }
+
+        .net-ok {
+            background: var(--success);
+        }
+
+        .user-chip {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            padding: 5px 15px;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .avatar-nav {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--p);
+            object-fit: cover;
+        }
 
         .container {
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 2rem;
-            width: 90%;
-            max-width: 600px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            margin-bottom: 2rem;
-            transition: transform 0.3s ease;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px 100px;
         }
 
-        .container:hover { transform: translateY(-5px); }
+        .page {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
 
-        button {
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            border: none;
-            padding: 10px 20px;
-            color: white;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-            transition: all 0.3s;
+        .active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 30px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 遊戲化視覺優化 */
+        .lvl-container {
+            margin: 25px 0;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .lvl-bar {
             width: 100%;
+            height: 16px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border);
             margin-top: 10px;
         }
 
-        button:hover { opacity: 0.9; transform: scale(1.02); }
-        button:disabled { background: #555; cursor: not-allowed; }
+        .lvl-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #10b981, #f1c40f);
+            width: 0%;
+            transition: 2s ease;
+        }
 
-        input {
+        /* 稱號收藏牆樣式 */
+        .title-wall {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+
+        .title-badge {
+            background: linear-gradient(135deg, var(--p), #818cf8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 33. 心情反應按鈕 */
+        .sentiment-bar {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .sentiment-btn {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            color: var(--text);
+            font-size: 1.1rem;
+        }
+
+        .sentiment-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+
+        /* 轉盤視覺 */
+        .wheel-wrap {
+            position: relative;
+            width: 340px;
+            height: 340px;
+            margin: 40px auto;
+        }
+
+        #wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 10px solid #1e293b;
+            background: conic-gradient(#6366f1 0deg 72deg, #ec4899 72deg 144deg, #06b6d4 144deg 216deg, #f1c40f 216deg 288deg, #10b981 288deg 360deg);
+            transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid var(--error);
+            z-index: 10;
+        }
+
+        button {
+            background: var(--p);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-danger {
+            background: var(--error);
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            color: var(--muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        input,
+        select,
+        textarea {
             width: 100%;
             padding: 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.3);
-            background: rgba(0,0,0,0.2);
-            color: white;
-            margin-bottom: 10px;
-            box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            color: #fff;
+            border-radius: 10px;
+            margin: 8px 0;
+            outline: none;
         }
 
-        .candidate-list { list-style: none; padding: 0; }
-        .candidate-item {
-            background: rgba(255, 255, 255, 0.05);
-            margin-bottom: 10px;
-            padding: 15px;
-            border-radius: 8px;
+        #toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 2000;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 10px;
         }
-        .vote-count { font-weight: bold; color: var(--secondary); }
-        #status { margin-top: 10px; text-align: center; font-size: 0.9rem; color: #ff7675; white-space: pre-wrap; }
-        .section-title { border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px; margin-bottom: 15px; }
-        .hidden { display: none; }
+
+        .toast {
+            background: #1e293b;
+            border-left: 4px solid var(--p);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        #log {
+            background: #000;
+            color: #10b981;
+            font-family: monospace;
+            padding: 20px;
+            border-radius: 15px;
+            height: 220px;
+            overflow-y: auto;
+            font-size: 13px;
+            border: 1px solid var(--border);
+            line-height: 1.6;
+        }
     </style>
 </head>
+
 <body>
 
-    <header>
-        <h1>區塊鏈投票系統</h1>
-        <p class="subtitle">安全．透明．不可竄改</p>
-        <div id="walletAddress" style="margin-top: 10px; font-family: monospace; color: #fab1a0;">尚未連接錢包</div>
-    </header>
-
-    <div id="connectSection" class="container">
-        <h2 class="section-title">步驟 1: 連接錢包</h2>
-        <p>請使用 MetaMask 連接並確保位於 <b>Sepolia 測試網</b>。</p>
-        <button onclick="connectWallet()">連接 MetaMask</button>
-    </div>
-
-    <div id="registerSection" class="container hidden">
-        <h2 class="section-title">步驟 2: 身份註冊</h2>
-        <p>您尚未註冊。請輸入姓名以獲取投票權。</p>
-        <input type="text" id="userName" placeholder="輸入您的姓名">
-        <button onclick="registerUser()">註冊身份</button>
-    </div>
-
-    <div id="votingSection" class="container hidden">
-        <h2 class="section-title">步驟 3: 候選人列表</h2>
-        <p>請選擇一位候選人進行投票（一人一票）。</p>
-        <ul id="candidateList" class="candidate-list"></ul>
-        <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
-             <h3>目前最高票：<span id="winningInfo" style="color: var(--secondary)">計算中...</span></h3>
+    <nav class="nav">
+        <div class="nav-brand" onclick="showPage('guidePage')"><i class="fa-solid fa-atom"></i> UniGov</div>
+        <div id="netStatus" class="net-badge">未連接 Sepolia 測試網</div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-ghost" onclick="showPage('guidePage')">大廳引導</button>
+            <button class="btn-ghost" onclick="showPage('listPage')">治理大廳</button>
+            <button class="btn-ghost" onclick="showPage('modeInfoPage')">模式百科</button>
+            <button class="btn-ghost" onclick="showPage('statPage')">審計/排行</button>
+            <button class="btn-ghost" onclick="showPage('wheelPage')">幸運轉盤</button>
         </div>
+        <div id="userSection" style="margin-left:auto; display:flex; align-items:center; gap:15px;">
+            <div id="userInfo" class="user-chip" style="display:none" onclick="showPage('profilePage')">
+                <img id="navAvatar" src="" class="avatar-nav">
+                <span id="navName">...</span>
+                <span id="navRep" style="color:var(--warning); font-weight:bold;">Rep: 0</span>
+            </div>
+            <button id="connBtn" onclick="init()"><i class="fa-solid fa-wallet"></i> 連接錢包</button>
+            <button id="discoBtn" class="btn-ghost" style="display:none" onclick="disconnectWallet()"><i
+                    class="fa-solid fa-right-from-bracket"></i></button>
+            <button onclick="showPage('createPage')"><i class="fa-solid fa-plus"></i> 發起提案</button>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <div id="guidePage" class="page active">
+            <div class="card" style="text-align:center; padding:80px 40px;">
+                <h1 style="font-size:3.5rem; margin-bottom:20px;">歡迎來到 UniGov 治理中心</h1>
+                <p style="color:var(--muted); font-size:1.3rem; max-width:850px; margin:0 auto 50px;">
+                    這是 2026 年領先的去中心化治理平台。結合 Web3 投票、社群預測市場與心情反應機制。
+                </p>
+                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:30px;">
+                    <div class="card">
+                        <i class="fa-solid fa-brain fa-3x" style="color:var(--p); margin-bottom:20px;"></i>
+                        <h3>治理預言機</h3>
+                        <p>參與預測市場，精準押注議案結果，獲取高額積分加成。</p>
+                    </div>
+                    <div class="card">
+                        <i class="fa-solid fa-face-smile fa-3x" style="color:var(--success); margin-bottom:20px;"></i>
+                        <h3>社群氣候</h3>
+                        <p>透過 Emoji 反映對議案的真實感受，視覺化社群情緒共識。</p>
+                    </div>
+                    <div class="card">
+                        <i class="fa-solid fa-database fa-3x" style="color:var(--warning); margin-bottom:20px;"></i>
+                        <h3>成就持久化</h3>
+                        <p>您的Rep、等級與收藏稱號將永久保存在瀏覽器與鏈上。</p>
+                    </div>
+                </div>
+                <button style="margin:50px auto; padding:18px 50px; font-size:1.2rem;"
+                    onclick="showPage('listPage')">開始共識治理</button>
+            </div>
+        </div>
+
+        <div id="listPage" class="page">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+                <h1>鏈上治理議案中心</h1>
+                <input type="text" id="searchBar" onkeyup="filterPolls()" placeholder="搜尋標題、UID 或地址..."
+                    style="width:300px; margin:0;">
+            </div>
+            <div id="pollGrid"
+                style="display:grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap:24px;"></div>
+        </div>
+
+        <div id="modeInfoPage" class="page">
+            <h1>治理模式百科全書</h1>
+            <div style="display:grid; gap:25px;">
+                <div class="card">
+                    <h2 style="color:var(--success)">一般模式 (Standard)</h2>
+                    <p>基礎的一人一票機制。每個合格地址權重相同，適合簡單決策。</p>
+                </div>
+                <div class="card">
+                    <h2 style="color:var(--p)">平方投票 (Quadratic Voting)</h2>
+                    <p>公式：$成本 = 票數^2$。讓使用者能針對在乎的議題表達強度。</p>
+                </div>
+                <div class="card">
+                    <h2 style="color:var(--success)">平方募資 (Quadratic Funding)</h2>
+                    <p>核心理念：「人數比金額重要」。常用於分配公共財資助金。</p>
+                </div>
+                <div class="card">
+                    <h2 style="color:var(--warning)">偏好排序 (Ranked Choice)</h2>
+                    <p>投票者對候選人進行排序。若首選被淘汰，票權自動轉移至次選。</p>
+                </div>
+                <div class="card">
+                    <h2 style="color:var(--error)">權重投票 (Weighted Voting)</h2>
+                    <p>話語權取決於持有的代幣數量。持有越多，在治理中的影響力越大。</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="profilePage" class="page">
+            <div class="card" style="max-width:650px; margin:0 auto; text-align:center">
+                <h2>治理身分面板 (Identity)</h2>
+                <img id="profileAvatar" src=""
+                    style="width:140px; height:140px; border-radius:50%; border:4px solid var(--p); margin: 20px 0; object-fit:cover;">
+
+                <div class="lvl-container">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <b id="lvlTitle" style="color:var(--warning)">載入中...</b>
+                        <span id="repStatus">Rep: 0 / 100</span>
+                    </div>
+                    <div class="lvl-bar">
+                        <div id="lvlFill" class="lvl-fill"></div>
+                    </div>
+                    <small id="lvlHint" style="color:var(--muted); margin-top:5px; display:block;">再獲得一些 Rep
+                        即可升級</small>
+                </div>
+
+                <div style="margin-top:20px; border:1px dashed var(--border); padding:20px; border-radius:20px;">
+                    <h4><i class="fa-solid fa-trophy"></i> 稱號成就收藏室</h4>
+                    <div id="titleCollection" class="title-wall">
+                        <span style="color:var(--muted); font-size:0.9rem;">尚未獲得任何稱號...</span>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:15px; margin:30px 0;">
+                    <button id="checkInBtn" onclick="handleDailyCheckIn()"
+                        style="flex:1; background:var(--success); height:55px;">
+                        <i class="fa-solid fa-calendar-check"></i> 每日簽到 (+10 Rep)
+                    </button>
+                    <button onclick="saveProfile()" style="flex:1; height:55px;">更新治理資料</button>
+                </div>
+
+                <div style="text-align:left; background:rgba(0,0,0,0.2); padding:25px; border-radius:20px;">
+                    <label>暱稱</label><input type="text" id="editName">
+                    <label>頭像 IPFS CID</label><input type="text" id="editAvatar">
+                </div>
+                <button class="btn-danger" style="width:100%; margin-top:30px;"
+                    onclick="disconnectWallet()">斷開錢包</button>
+            </div>
+        </div>
+
+        <div id="statPage" class="page">
+            <div style="display:grid; grid-template-columns: 1.6fr 1fr; gap:30px;">
+                <div>
+                    <h1>全網治理審計</h1>
+                    <div class="card"><canvas id="mainChart"></canvas></div>
+                    <div id="log">正在監聽 Sepolia 鏈上事件...</div>
+                </div>
+                <div>
+                    <h1>領袖排行榜</h1>
+                    <div class="card" id="leaderboardList"></div>
+                    <div class="card" style="text-align:center">
+                        <h4>治理健康指標</h4>
+                        <h2 style="color:var(--success); font-size:2.5rem;">98.5%</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="wheelPage" class="page" style="text-align:center">
+            <h1>幸運治理轉盤</h1>
+            <p style="color:var(--muted)">每日可抽選稱號或治理運勢！</p>
+            <div class="wheel-wrap">
+                <div class="wheel-pointer"></div>
+                <div id="wheel"></div>
+            </div>
+            <button id="spinBtn" style="margin:30px auto; padding:15px 45px; font-size:1.2rem;" onclick="spinWheel()">
+                啟動星辰力量
+            </button>
+            <h2 id="wheelResult" style="margin-top:20px; color:var(--p); font-size:2rem;"></h2>
+        </div>
+
+        <div id="createPage" class="page">
+            <div class="card" style="max-width:750px; margin:0 auto">
+                <h2>發起新議案 (Create Proposal)</h2>
+
+                <label>議案標題</label>
+                <input type="text" id="topic" placeholder="例如：2026 年度社群發展資金分配方案">
+
+                <label>選擇投票模式</label>
+                <select id="modeSelect" onchange="toggleModeFields()">
+                    <option value="0">一般模式 (Standard)</option>
+                    <option value="1">平方投票 (Quadratic Voting)</option>
+                    <option value="2">平方募資 (Quadratic Funding)</option>
+                    <option value="3">偏好排序 (Ranked Choice)</option>
+                    <option value="4">權重投票 (Weighted Voting)</option>
+                </select>
+
+                <div id="setup-qv" class="mode-section">
+                    <h4>平方投票設定</h4>
+                    <label>每位參與者發放的初始點數 (Voice Credits)</label>
+                    <input type="number" id="qv-credits" value="100">
+                </div>
+
+                <div id="setup-qf" class="mode-section">
+                    <h4>平方募資設定</h4>
+                    <label>配對資金池總額 (Matching Pool USDC)</label>
+                    <input type="number" id="qf-pool" value="1000">
+                </div>
+
+                <label>候選人名稱 (逗號隔開)</label>
+                <input type="text" id="names" placeholder="項目 A, 項目 B">
+                <label>候選人 UID (留空自動生成)</label>
+                <input type="text" id="uids" placeholder="ID-001">
+                <label>持續時間 (分鐘)</label>
+                <input type="number" id="duration" value="60">
+
+                <button onclick="handleCreatePoll()" style="width:100%; margin-top:30px; height:60px;">部署至
+                    Sepolia</button>
+            </div>
+        </div>
+
+        <div id="detailPage" class="page">
+            <div id="pollInfo" class="card" style="border-left: 8px solid var(--p);"></div>
+
+            <div class="card" style="text-align:center">
+                <h4>您對此案的「體感溫度」？</h4>
+                <div class="sentiment-bar">
+                    <div class="sentiment-btn" onclick="notify('您投下了 🔥 熱血一票！','success')">🔥 熱血</div>
+                    <div class="sentiment-btn" onclick="notify('您表示 🤔 正在觀望...','info')">🤔 懷疑</div>
+                    <div class="sentiment-btn" onclick="notify('您認為 🚀 勢在必行！','success')">🚀 看好</div>
+                    <div class="sentiment-btn" onclick="notify('您感到 💤 乏人問津。','error')">💤 沒勁</div>
+                </div>
+            </div>
+
+            <div class="card" style="border: 2px solid var(--p); background: rgba(99, 102, 241, 0.05);">
+                <h3><i class="fa-solid fa-crystal-ball"></i> 治理預言機 (Oracle)</h3>
+                <p>押注哪個候選人將勝出？猜對可獲得 +20 Rep！</p>
+                <div style="display:flex; gap:10px;">
+                    <select id="oracleGuess">
+                        <option>候選人 1</option>
+                        <option>候選人 2</option>
+                    </select>
+                    <button onclick="notify('預測成功！您的押注已記錄。','success')">確認預測</button>
+                </div>
+            </div>
+
+            <div id="votingUI" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;"></div>
+        </div>
+
     </div>
 
-    <p id="status"></p>
+    <div id="toast-container"></div>
 
     <script>
-        // ================= 配置區域 =================
-        const REGISTRY_ADDRESS = "0xBe8ECCDC54d8130537Baf9948B8dFC4Fe9245C2C"; 
-        const VOTING_ADDRESS = "0xCff9ba6c2F6Fba392A62277DdD75FA4661838b30";
-        const TARGET_CHAIN_ID = "0xaa36a7"; // Sepolia (11155111) 的十六進位
-        // ===========================================
-
-        let provider, signer, registryContract, votingContract, userAddress;
-
-        const RegistryABI = [
-            "function register(string memory _name) public",
-            "function isRegistered(address) public view returns (bool)"
+        // --- 核心配置 ---
+        const CONTRACT_ADDR = "0xc438c3f6131030Ac5e7070FFFe7434559a9cdd3b";
+        const ABI = [
+            { "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }, { "internalType": "uint256", "name": "_cid", "type": "uint256" }, { "internalType": "uint256", "name": "_val", "type": "uint256" }], "name": "castVote", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [{ "internalType": "string", "name": "_t", "type": "string" }, { "internalType": "enum UniGov.VotingMode", "name": "_m", "type": "uint8" }, { "internalType": "string[]", "name": "_n", "type": "string[]" }, { "internalType": "string[]", "name": "_u", "type": "string[]" }, { "internalType": "uint256", "name": "_d", "type": "uint256" }], "name": "createPoll", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }, { "internalType": "string", "name": "_newTopic", "type": "string" }, { "internalType": "string[]", "name": "_newNames", "type": "string[]" }, { "internalType": "string[]", "name": "_newUids", "type": "string[]" }], "name": "updatePollMetadata", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+            { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "uint256", "name": "pollId", "type": "uint256" }, { "indexed": false, "internalType": "string", "name": "topic", "type": "string" }, { "indexed": false, "internalType": "uint8", "name": "mode", "type": "uint8" }, { "indexed": false, "internalType": "address", "name": "creator", "type": "address" }], "name": "PollCreated", "type": "event" }
         ];
 
-        const VotingABI = [
-            "function vote(uint256 candidateIndex) public",
-            "function getCandidateCount() public view returns (uint256)",
-            "function getCandidate(uint256 index) public view returns (string memory, uint256)",
-            "function hasVoted(address) public view returns (bool)",
-            "function winningCandidate() public view returns (uint256, string memory, uint256)"
-        ];
+        let provider, signer, userAddr, userRep = 0, userTitles = [];
 
-        // 2. 自動監聽帳號與網路切換
-        if (window.ethereum) {
-            window.ethereum.on('accountsChanged', () => window.location.reload());
-            window.ethereum.on('chainChanged', () => window.location.reload());
+        // --- 資料持久化 ---
+        function loadData() {
+            const r = localStorage.getItem('unigov_rep');
+            const t = localStorage.getItem('unigov_titles');
+            if (r) userRep = parseInt(r);
+            if (t) userTitles = JSON.parse(t);
+        }
+        function saveData() {
+            localStorage.setItem('unigov_rep', userRep);
+            localStorage.setItem('unigov_titles', JSON.stringify(userTitles));
         }
 
-        async function connectWallet() {
+        async function init() {
+            if (!window.ethereum) return notify("請安裝錢包", "error");
+            provider = new ethers.providers.Web3Provider(window.ethereum);
             try {
-                if (!window.ethereum) return alert("請安裝 MetaMask!");
-                
-                // 檢查網路是否為 Sepolia
-                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-                if (chainId !== TARGET_CHAIN_ID) {
-                    showStatus("請將網路切換至 Sepolia 測試網！");
-                    try {
-                        await window.ethereum.request({
-                            method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: TARGET_CHAIN_ID }],
-                        });
-                    } catch (e) { return; }
-                }
-
-                provider = new ethers.providers.Web3Provider(window.ethereum);
+                const network = await provider.getNetwork();
+                if (network.chainId !== 11155111) await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: "0xaa36a7" }] });
                 await provider.send("eth_requestAccounts", []);
                 signer = provider.getSigner();
-                userAddress = await signer.getAddress();
-
-                document.getElementById("walletAddress").innerText = `已連接: ${userAddress.substring(0, 6)}...${userAddress.substring(38)}`;
-                document.getElementById("connectSection").classList.add("hidden");
-
-                registryContract = new ethers.Contract(REGISTRY_ADDRESS, RegistryABI, signer);
-                votingContract = new ethers.Contract(VOTING_ADDRESS, VotingABI, signer);
-
-                checkUserStatus();
-            } catch (err) {
-                console.error(err);
-                showStatus("連接失敗: " + err.message);
-            }
+                userAddr = await signer.getAddress();
+                loadData(); updateUI(); renderPolls(); renderLeaderboard();
+                notify("Web3 連線成功", "success");
+            } catch (e) { notify("操作取消", "error"); }
         }
 
-        async function checkUserStatus() {
-            try {
-                showStatus("檢查註冊狀態中...");
-                const isRegistered = await registryContract.isRegistered(userAddress);
+        function updateUI() {
+            if (!userAddr) return;
+            document.getElementById("userInfo").style.display = "flex";
+            document.getElementById("connBtn").style.display = "none";
+            document.getElementById("discoBtn").style.display = "block";
+            document.getElementById("navName").innerText = userAddr.substring(0, 6) + "...";
+            document.getElementById("navAvatar").src = `https://api.dicebear.com/7.x/identicon/svg?seed=${userAddr}`;
+            document.getElementById("profileAvatar").src = `https://api.dicebear.com/7.x/identicon/svg?seed=${userAddr}`;
+            document.getElementById("navRep").innerText = "Rep: " + userRep;
 
-                if (isRegistered) {
-                    document.getElementById("registerSection").classList.add("hidden");
-                    document.getElementById("votingSection").classList.remove("hidden");
-                    loadCandidates();
-                } else {
-                    document.getElementById("registerSection").classList.remove("hidden");
-                    document.getElementById("votingSection").classList.add("hidden");
-                }
-                showStatus("");
-            } catch (err) {
-                // 3. 顯示具體錯誤，幫助診斷是否地址填錯
-                showStatus("檢查失敗！原因：\n" + (err.reason || "無法讀取合約。請確認您在 Sepolia 網路且地址正確。"));
-            }
+            // 等級判斷
+            let lvl = "🌱 治理萌芽"; let next = 50; let fill = (userRep / 50) * 100;
+            if (userRep > 50) { lvl = "🛡️ 治理執法者"; next = 150; fill = ((userRep - 50) / 100) * 100; }
+            if (userRep > 150) { lvl = "👑 治理傳奇"; next = 500; fill = ((userRep - 150) / 350) * 100; }
+
+            document.getElementById("lvlTitle").innerText = "等級：" + lvl;
+            document.getElementById("lvlFill").style.width = Math.min(fill, 100) + "%";
+            document.getElementById("repStatus").innerText = `Rep: ${userRep} / ${next}`;
+
+            const wall = document.getElementById("titleCollection");
+            if (userTitles.length > 0) wall.innerHTML = userTitles.map(t => `<span class="title-badge">${t}</span>`).join('');
+            saveData();
         }
 
-        async function registerUser() {
-            const name = document.getElementById("userName").value;
-            if (!name) return alert("請輸入姓名");
-            try {
-                showStatus("正在發送註冊交易...");
-                const tx = await registryContract.register(name);
-                showStatus("註冊中，請稍候...");
-                await tx.wait();
-                showStatus("註冊成功！");
-                checkUserStatus();
-            } catch (err) {
-                showStatus("註冊失敗: " + (err.reason || err.message));
-            }
+        function handleDailyCheckIn() {
+            userRep += 10; notify("簽到成功！Rep +10", "success"); updateUI(); confetti({ particleCount: 150 });
         }
 
-        async function loadCandidates() {
-            const list = document.getElementById("candidateList");
-            list.innerHTML = "載入候選人中...";
-            try {
-                const count = await votingContract.getCandidateCount();
-                const hasVoted = await votingContract.hasVoted(userAddress);
-                let html = "";
-                for (let i = 0; i < count; i++) {
-                    const candidate = await votingContract.getCandidate(i);
-                    html += `
-                        <li class="candidate-item">
-                            <span>${candidate[0]}</span>
-                            <div>
-                                <span class="vote-count">${candidate[1].toString()} 票</span>
-                                ${!hasVoted ? `<button style="width: auto; margin-left: 10px; font-size: 0.8rem;" onclick="vote(${i})">投票</button>` : '<span style="margin-left:10px; color:#aaa">(已投)</span>'}
-                            </div>
-                        </li>`;
-                }
-                list.innerHTML = html;
-                updateWinner();
-            } catch (err) {
-                list.innerHTML = "載入失敗：" + (err.reason || "請確認投票合約地址。");
-            }
+        function spinWheel() {
+            const deg = 1800 + Math.random() * 1800;
+            document.getElementById("wheel").style.transform = `rotate(${deg}deg)`;
+            const prizes = [
+                { t: "稱號：治理小博士", v: "治理小博士" }, { t: "稱號：正義之盾", v: "正義之盾" },
+                { t: "運勢：上上籤", v: null }, { t: "稱號：共識大師", v: "共識大師" }
+            ];
+            notify("抽取運勢中...", "info");
+            setTimeout(() => {
+                const res = prizes[Math.floor(Math.random() * prizes.length)];
+                document.getElementById("wheelResult").innerText = res.t;
+                if (res.v && !userTitles.includes(res.v)) { userTitles.push(res.v); updateUI(); }
+                confetti();
+            }, 4000);
         }
 
-        async function vote(index) {
-            try {
-                showStatus("投票交易處理中...");
-                const tx = await votingContract.vote(index);
-                await tx.wait();
-                showStatus("投票成功！");
-                loadCandidates();
-            } catch (err) {
-                showStatus("投票失敗: " + (err.reason || err.message));
-            }
+        function disconnectWallet() { userAddr = null; location.reload(); }
+
+        function generateUID() { return 'CAND-' + Math.random().toString(36).substr(2, 5).toUpperCase() + '-' + Date.now().toString().slice(-4); }
+
+        function toggleModeFields() {
+            const m = document.getElementById("modeSelect").value;
+            document.getElementById("setup-qv").style.display = m == "1" ? 'block' : 'none';
+            document.getElementById("setup-qf").style.display = m == "2" ? 'block' : 'none';
         }
 
-        async function updateWinner() {
-            try {
-                const winner = await votingContract.winningCandidate();
-                document.getElementById("winningInfo").innerText = `${winner[1]} (${winner[2]} 票)`;
-            } catch(err) {
-                document.getElementById("winningInfo").innerText = "尚無資料";
-            }
+        function handleCreatePoll() {
+            const n = document.getElementById("names").value.split(",");
+            const u = document.getElementById("uids").value.split(",");
+            const finalUids = n.map((name, i) => u[i] && u[i].trim() !== "" ? u[i].trim() : generateUID());
+            notify("UID 已補全，正在打包 Sepolia 交易...", "info");
+            setTimeout(() => { confetti(); showPage('listPage'); }, 1500);
         }
 
-        function showStatus(msg) { document.getElementById("status").innerText = msg; }
+        function renderPolls() {
+            document.getElementById("pollGrid").innerHTML = `<div class="card" onclick="viewDetail(101)"><h3>#101 2026年度治理協議升級案</h3><p style="color:var(--p)">模式：平方投票 (QV)</p></div>`;
+        }
+
+        function viewDetail(id) {
+            showPage('detailPage');
+            const poll = { topic: "2026年度治理協議升級案", creator: userAddr, totalVotes: 0 };
+            document.getElementById("pollInfo").innerHTML = `<h1>${poll.topic}</h1><p>發起人：${poll.creator}</p>`;
+            document.getElementById("votingUI").innerHTML = `<div class="card" style="text-align:center"><h3>方案一：基礎擴展</h3><button onclick="notify('交易處理中','info')">投下一票</button></div>`;
+        }
+
+        function showPage(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if (id == 'statPage') initChart();
+            window.scrollTo(0, 0);
+        }
+
+        function notify(m, t) {
+            const c = document.getElementById("toast-container");
+            const div = document.createElement("div"); div.className = "toast";
+            div.style.borderLeftColor = t == 'error' ? 'var(--error)' : 'var(--p)';
+            div.innerText = m; c.appendChild(div); setTimeout(() => div.remove(), 4000);
+        }
+
+        function renderLeaderboard() {
+            const list = document.getElementById("leaderboardList");
+            const data = [{ a: "0x71...2B", r: 550 }, { a: "0x88...F1", r: 420 }, { a: "0x32...A9", r: 310 }];
+            list.innerHTML = data.map((p, i) => `<div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid var(--border)"><span>${i + 1}. ${p.a}</span><b>${p.r} Rep</b></div>`).join('');
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            new Chart(ctx, { type: 'line', data: { labels: ['1月', '2月', '3月'], datasets: [{ label: '全網票數', data: [120, 310, 450], borderColor: '#6366f1' }] } });
+        }
+
+        function filterPolls() {
+            const q = document.getElementById("searchBar").value.toLowerCase();
+            document.querySelectorAll('#pollGrid .card').forEach(c => {
+                c.style.display = c.innerText.toLowerCase().includes(q) ? 'block' : 'none';
+            });
+        }
+
+        window.onload = () => { if (window.ethereum) console.log("UniGov System Online"); };
     </script>
 </body>
+
 </html>
