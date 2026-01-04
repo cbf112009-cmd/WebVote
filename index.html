@@ -115,7 +115,7 @@
 
     <div class="container">
 
-        <!-- 1. 引導頁面 (最重要的 3 項選定) -->
+        <!-- 1. 引導頁面 -->
         <div id="guidePage" class="page active">
             <div class="card" style="text-align:center; padding:80px 40px;">
                 <h1 style="font-size:3.5rem; margin-bottom:20px;">UniGov 治理生態大廳</h1>
@@ -156,7 +156,7 @@
         <div id="modeInfoPage" class="page">
             <h1>治理模式手冊</h1>
             <div style="display:grid; gap:25px;">
-                <div class="card"><h2>一般模式 (Standard)</h2><p>一人一票，基礎民主。</p></div>
+                <div class="card"><h2>一般模式 (Standard)</h2><p>一人一票，基礎民主基準。</p></div>
                 <div class="card"><h2>平方投票 (Quadratic Voting)</h2><p>$成本 = 票數^2$。點數制度避免大戶壟斷。</p></div>
                 <div class="card"><h2>排序投票 (Ranked Choice)</h2><p>投票者對候選人進行優先順序排列。</p></div>
             </div>
@@ -188,9 +188,9 @@
 
                 <div style="display:flex; gap:15px; margin:30px 0;">
                     <button onclick="handleDailyCheckIn()" style="flex:1; background:var(--success); height:55px;"><i class="fa-solid fa-calendar-check"></i> 每日簽到 (+10 Rep)</button>
-                    <button onclick="notify('已暫存','success')" style="flex:1; height:55px;">更新資料</button>
+                    <button onclick="notify('資料已保存至本地暫存','success')" style="flex:1; height:55px;">更新個人資料</button>
                 </div>
-                <button class="btn-danger" style="width:100%;" onclick="disconnectWallet()">斷開錢包</button>
+                <button class="btn-danger" style="width:100%;" onclick="disconnectWallet()">斷開連接</button>
             </div>
         </div>
 
@@ -225,7 +225,7 @@
             <div class="card" style="max-width:800px; margin:0 auto">
                 <h2>發起新治理議案</h2>
                 <label>議案標題</label>
-                <input type="text" id="topic" placeholder="例：誰是 2026 年度 MVP？">
+                <input type="text" id="topic" placeholder="例：2026 年度最佳治理項目">
                 
                 <label>投票模式</label>
                 <select id="modeSelect">
@@ -235,15 +235,15 @@
                 </select>
 
                 <div style="margin-top:20px;">
-                    <h4>候選人設定 (支援 IPFS CID 或 本地上傳)</h4>
+                    <h4>候選人設定 (支援 IPFS/Pinata 或 本地上傳)</h4>
                     <div id="candidateInputsContainer"></div>
                     <button class="btn-ghost" onclick="addCandidateInput()" style="width:100%; margin-top:10px;"><i class="fa-solid fa-plus"></i> 新增選項</button>
                 </div>
 
-                <label>投票時長 (分鐘)</label>
+                <label>投票持續時間 (分鐘)</label>
                 <input type="number" id="duration" value="60">
                 
-                <button id="submitCreateBtn" onclick="handleCreatePoll()" style="width:100%; margin-top:30px; height:60px;">發送至 Sepolia 區塊鏈</button>
+                <button id="submitCreateBtn" onclick="handleCreatePoll()" style="width:100%; margin-top:30px; height:60px;">部署至區塊鏈 (Sepolia)</button>
             </div>
         </div>
 
@@ -251,18 +251,17 @@
         <div id="detailPage" class="page">
             <div id="pollInfo" class="card" style="border-left: 8px solid var(--p);"></div>
             
-            <!-- 高級編輯面板 -->
             <div id="creatorEditSection" class="card" style="display:none; border:2px solid var(--warning);">
                 <h3 style="color:var(--warning);"><i class="fa-solid fa-user-gear"></i> 高級編輯面板 (0 票限定)</h3>
                 <label>修改標題</label>
                 <input type="text" id="editTopic">
-                <label>修改選項、CID 或 重傳圖片</label>
+                <label>修改選項與圖片 (支援 CID/網址/上傳)</label>
                 <div id="editCandidatesContainer"></div>
                 <button onclick="handleEditPollMetadata()" class="btn-success" style="width:100%; margin-top:15px;">執行鏈上更新</button>
             </div>
 
             <div id="qvUserStats" class="card" style="display:none; border:1px solid var(--warning);">
-                <p id="remainingCreditsText" style="margin:0; font-weight:bold;">剩餘點數：載入中...</p>
+                <p id="remainingCreditsText" style="margin:0; font-weight:bold;">您的剩餘點數：載入中...</p>
             </div>
 
             <div id="votingUI" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;"></div>
@@ -304,7 +303,7 @@
                 updateUI();
                 renderPolls();
                 renderLeaderboard();
-                notify("連線成功", "success");
+                notify("錢包連線成功 (Sepolia)", "success");
             } catch (e) { notify("連線失敗", "error"); }
         }
 
@@ -315,24 +314,31 @@
                 userRep = dashboard.reputation.toNumber();
                 userCredits = dashboard.credits.toNumber();
                 document.getElementById("regAlert").style.display = isRegisteredOnChain ? "none" : "block";
-            } catch (e) { }
+                document.getElementById("netStatus").innerText = "Sepolia 已連線";
+                document.getElementById("netStatus").classList.add("net-ok");
+            } catch (e) { console.error("同步失敗", e); }
         }
 
-        // --- 修復：CID 與 Base64 處理邏輯 ---
+        // --- 核心修正：增強 Pinata/IPFS 與圖片辨識邏輯 ---
         function resolveCandidateImage(uid) {
             if (!uid || uid.length < 5) return `https://api.dicebear.com/7.x/identicon/svg?seed=${uid || 'UniGov'}`;
             uid = uid.trim();
-            if (uid.startsWith('data:image')) return uid; // 處理上傳
-            if (uid.startsWith('Qm') || uid.startsWith('bafy')) {
-                return `https://cloudflare-ipfs.com/ipfs/${uid}`; // 處理 CID
+            // 處理本地 Base64
+            if (uid.startsWith('data:image')) return uid; 
+            // 處理網址/CID 提取
+            const cidRegex = /(Qm[1-9A-HJ-NP-Za-km-z]{44}|bafy[a-zA-Z0-9]{40,})/;
+            const match = uid.match(cidRegex);
+            if (match) {
+                return `https://cloudflare-ipfs.com/ipfs/${match[0]}`;
             }
+            if (uid.startsWith('http')) return uid;
             return `https://api.dicebear.com/7.x/identicon/svg?seed=${uid}`;
         }
 
         async function processImageUpload(input, targetId) {
             const file = input.files[0];
             if (!file) return;
-            if (file.size > 500000) return notify("圖片過大，請限制於 500KB 以內","error");
+            if (file.size > 500000) return notify("圖片過大 (500KB限制)","error");
             const reader = new FileReader();
             reader.onload = (e) => {
                 document.getElementById(targetId).value = e.target.result;
@@ -346,8 +352,8 @@
             const index = container.children.length;
             const div = document.createElement("div"); div.className = "edit-card-row";
             div.innerHTML = `
-                <div class="edit-flex"><input type="text" class="cand-name" placeholder="名稱"><input type="text" id="cand-uid-${index}" class="cand-uid" placeholder="CID"></div>
-                <label class="file-label" for="file-${index}"><i class="fa-solid fa-upload"></i> 上傳本地圖片</label>
+                <div class="edit-flex"><input type="text" class="cand-name" placeholder="選項名稱"><input type="text" id="cand-uid-${index}" class="cand-uid" placeholder="貼上 CID 或 網址"></div>
+                <label class="file-label" for="file-${index}"><i class="fa-solid fa-upload"></i> 從電腦上傳圖片</label>
                 <input type="file" id="file-${index}" style="display:none" accept="image/*" onchange="processImageUpload(this, 'cand-uid-${index}')">`;
             container.appendChild(div);
         }
@@ -375,7 +381,7 @@
                         </div>`).join('');
                 }
                 document.getElementById("qvUserStats").style.display = (p.mode === 1) ? "block" : "none";
-                if(p.mode === 1) document.getElementById("remainingCreditsText").innerText = `當前餘額：${userCredits} 點`;
+                if(p.mode === 1) document.getElementById("remainingCreditsText").innerText = `您的當前可用點數：${userCredits} 點`;
 
                 const vUI = document.getElementById("votingUI");
                 vUI.innerHTML = candidates.map((c, i) => `
@@ -383,12 +389,12 @@
                         <div class="cand-img-wrap"><img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://via.placeholder.com/220?text=Error'"></div>
                         <h3>${c.name}</h3><p>鏈上票數: ${c.voteWeight.toString()}</p>
                         ${p.mode === 1 ? `
-                            <input type="number" id="qv-input-${i}" placeholder="票數" min="1" oninput="updateQVCost(${i})">
-                            <div id="qv-cost-${i}" style="color:var(--warning); font-size:0.8rem; margin-bottom:10px;">耗：0</div>
-                            <button onclick="handleCastVote(${pid}, ${i}, 1)">投平方票</button>
+                            <input type="number" id="qv-input-${i}" placeholder="欲投票數" min="1" oninput="updateQVCost(${i})">
+                            <div id="qv-cost-${i}" style="color:var(--warning); font-size:0.8rem; margin-bottom:10px;">耗能：0</div>
+                            <button onclick="handleCastVote(${pid}, ${i}, 1)">平方投票</button>
                         ` : `<button onclick="handleCastVote(${pid}, ${i}, 0)">投下一票</button>`}
                     </div>`).join('');
-            } catch (e) { notify("失敗", "error"); }
+            } catch (e) { notify("抓取失敗", "error"); }
         }
 
         function updateQVCost(idx) {
@@ -399,20 +405,36 @@
             el.style.color = cost > userCredits ? "var(--error)" : "var(--warning)";
         }
 
+        // --- 核心修正：修復投票交易邏輯 ---
         async function handleCastVote(pid, cid, type) {
-            if(!isRegisteredOnChain) return notify("請先註冊", "error");
-            let val = (type === 1) ? document.getElementById(`qv-input-${cid}`).value : 1;
+            if(!isRegisteredOnChain) return notify("請先註冊身分", "error");
+            
+            // 嚴謹獲取票數
+            let valInput = document.getElementById(`qv-input-${cid}`);
+            let val = (type === 1) ? (valInput ? valInput.value : 0) : 1;
+            val = parseInt(val);
+
+            if (isNaN(val) || val <= 0) return notify("請輸入有效的投票數", "warning");
             if (type === 1 && val * val > userCredits) return notify("點數不足", "error");
+
             try {
-                notify("發送選票...", "info");
+                notify("打包選票中，請確認錢包...", "info");
                 const tx = await contract.castVote(pid, cid, val);
-                await tx.wait(); confetti(); viewDetail(pid);
-            } catch (e) { notify("交易失敗", "error"); }
+                notify(`交易已廣播: ${tx.hash.substring(0,10)}...`, "info");
+                await tx.wait(); 
+                confetti(); 
+                notify("投票成功！數據已上鏈", "success"); 
+                viewDetail(pid);
+            } catch (e) { 
+                console.error(e);
+                const reason = e.reason || e.message || "交易被撤銷";
+                notify("投票失敗: " + (reason.includes("user rejected") ? "使用者拒絕交易" : reason), "error"); 
+            }
         }
 
         async function handleEditPollMetadata() {
             try {
-                notify("更新中...", "info");
+                notify("發送鏈上更新...", "info");
                 const newT = document.getElementById("editTopic").value;
                 const ns = Array.from(document.querySelectorAll(".edit-cand-name")).map(i => i.value);
                 const us = Array.from(document.querySelectorAll(".edit-cand-uid")).map(i => i.value);
@@ -425,20 +447,21 @@
             if(!isRegisteredOnChain) return notify("請先註冊", "error");
             const btn = document.getElementById("submitCreateBtn");
             const topic = document.getElementById("topic").value;
-            const mode = document.getElementById("modeSelect").value;
             const ns = Array.from(document.querySelectorAll(".cand-name")).map(i => i.value);
             const us = Array.from(document.querySelectorAll(".cand-uid")).map(i => i.value);
+            if(!topic || ns.length < 2) return notify("資訊不全 (至少 2 個選項)", "error");
             try {
-                btn.disabled = true; btn.innerText = "交易中...";
-                const tx = await contract.createPoll(topic, mode, ns, us, document.getElementById("duration").value);
+                btn.disabled = true; btn.innerText = "交易打包中...";
+                const tx = await contract.createPoll(topic, document.getElementById("modeSelect").value, ns, us, document.getElementById("duration").value);
                 await tx.wait(); confetti(); renderPolls(); showPage('listPage');
-            } catch (e) { notify("失敗", "error"); } finally { btn.disabled = false; btn.innerText = "發送交易"; }
+            } catch (e) { notify("發起失敗", "error"); } finally { btn.disabled = false; btn.innerText = "發送交易"; }
         }
 
         async function handleRegisterOnChain() {
             try {
-                const tx = await contract.register("User", "default");
+                const tx = await contract.register("Governance_User", "default");
                 await tx.wait(); await syncUserDashboard(); updateUI();
+                notify("註冊成功！", "success");
             } catch (e) { notify("註冊失敗", "error"); }
         }
 
@@ -450,7 +473,7 @@
                 let html = "";
                 for(let i = count.toNumber() - 1; i >= 0; i--) {
                     const p = await contract.allPolls(i);
-                    html += `<div class="card" onclick="viewDetail(${i})"><span class="cost-tag">#${i}</span><h3>${p.topic}</h3><p style="color:var(--muted)">${p.totalVotes.toString()} 票</p><button class="btn-ghost" style="width:100%; margin-top:15px;">進入治理</button></div>`;
+                    html += `<div class="card" onclick="viewDetail(${i})"><span class="cost-tag">#${i}</span><h3>${p.topic}</h3><p style="color:var(--muted)">總累積 ${p.totalVotes.toString()} 票</p><button class="btn-ghost" style="width:100%; margin-top:15px;">進入治理</button></div>`;
                 }
                 grid.innerHTML = html || '<p>尚無議案</p>';
             } catch (e) { }
@@ -486,7 +509,7 @@
         function spinWheel() {
             const deg = 1800 + Math.random() * 1800;
             document.getElementById("wheel").style.transform = `rotate(${deg}deg)`;
-            const results = [{t:"稱號：治理大師",v:"治理大師"},{t:"稱號：公正之盾",v:"公正之盾"}];
+            const results = [{t:"稱號：治理先鋒",v:"治理先鋒"},{t:"稱號：真理追尋者",v:"真理追尋者"}];
             setTimeout(() => {
                 const res = results[Math.floor(Math.random() * results.length)];
                 document.getElementById("wheelResult").innerText = res.t;
@@ -513,7 +536,7 @@
         function initChart() {
             const ctx = document.getElementById('mainChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['1月', '2月', '3月'], datasets: [{ label: '全網票數', data: [120, 310, 450], borderColor: '#6366f1' }] } });
+            chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['1月', '2月', '3月'], datasets: [{ label: '全網總票數', data: [120, 310, 450], borderColor: '#6366f1', tension: 0.4 }] } });
         }
 
         function filterPolls() {
@@ -525,7 +548,7 @@
 
         window.onload = () => { 
             if (window.ethereum) init(); 
-            addCandidateInput(); addCandidateInput();
+            addCandidateInput(); addCandidateInput(); 
         };
     </script>
 </body>
