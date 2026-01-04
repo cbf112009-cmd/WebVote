@@ -116,13 +116,13 @@
             <div class="card" style="text-align:center; padding:80px 40px;">
                 <h1 style="font-size:3.5rem; margin-bottom:20px;">UniGov 治理生態大廳</h1>
                 <p style="color:var(--muted); font-size:1.3rem; max-width:850px; margin:0 auto 50px;">
-                    這是 2026 年最強大的去中心化治理引擎。整合身分主權、多維共識與榮譽養成。
+                    這是一座建立在 Web3 基礎上的數位議會。整合身分主權、多維共識與遊戲化養成。
                 </p>
                 <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:30px;">
                     <div class="card" style="border-top: 5px solid var(--p);">
                         <i class="fa-solid fa-id-card fa-3x" style="color:var(--p); margin-bottom:20px;"></i>
                         <h3>身分主權與信譽</h3>
-                        <p>錢包即身分。您的每一次貢獻都將量化為聲譽值 (Rep)，這將決定您在組織中的影響力權重，確保真實參與權。</p>
+                        <p>錢包即身分。您的每一次貢獻都將轉化為聲譽值 (Rep)，這將決定您在組織中的影響力權重，確保真實參與權。</p>
                     </div>
                     <div class="card" style="border-top: 5px solid var(--success);">
                         <i class="fa-solid fa-microchip fa-3x" style="color:var(--success); margin-bottom:20px;"></i>
@@ -251,6 +251,11 @@
 
         <!-- 8. 詳情頁面 -->
         <div id="detailPage" class="page">
+            <!-- 回列表按鈕 -->
+            <button class="btn-ghost" onclick="showPage('listPage')" style="margin-bottom: 20px;">
+                <i class="fa-solid fa-chevron-left"></i> 返回議案列表
+            </button>
+
             <div id="pollInfo" class="card" style="border-left: 8px solid var(--p);"></div>
             
             <div id="creatorEditSection" class="card" style="display:none; border:2px solid var(--warning); background:rgba(241,196,15,0.05);">
@@ -259,7 +264,14 @@
                 <input type="text" id="editTopic">
                 <label>修改選項與圖片 (支援 CID 或 重新上傳)</label>
                 <div id="editCandidatesContainer"></div>
-                <button onclick="handleEditPollMetadata()" class="btn-success" style="width:100%; margin-top:15px;">執行鏈上更新</button>
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <button onclick="handleEditPollMetadata()" class="btn-success" style="flex:2;">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> 執行鏈上更新
+                    </button>
+                    <button onclick="handleDeletePoll()" class="btn-danger" style="flex:1;">
+                        <i class="fa-solid fa-trash"></i> 刪除此提案
+                    </button>
+                </div>
             </div>
 
             <div class="card" style="text-align:center">
@@ -385,12 +397,10 @@
             if (uid.startsWith('data:image')) return uid; 
 
             // 強化正規表達式：支援 Qm...、bafy...、bafk... (v0 & v1)
-            // 修正為捕捉最核心的編碼字串
             const cidRegex = /(Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{58}|bafy[a-zA-Z0-9]{40,}|bafk[a-zA-Z0-9]{40,})/;
             const match = uid.match(cidRegex);
             
             if (match) {
-                // 使用 ipfs.io 閘道，對 v1 CID 的相容性較佳
                 return `https://ipfs.io/ipfs/${match[0]}`;
             }
             
@@ -435,7 +445,7 @@
                         <div><span class="cost-tag">#${pid}</span><h1>${p.topic}</h1></div>
                         <span class="cost-tag" style="background:rgba(255,255,255,0.1)">${modeNames[p.mode]}模式</span>
                     </div>
-                    <p style="font-size:0.8rem; color:var(--muted); margin-top:10px;">發起者：${p.creator}</p>`;
+                    <p style="font-size:0.8rem; color:var(--muted); margin-top:10px;">由地址 ${p.creator} 發佈</p>`;
                 
                 const isCreator = p.creator.toLowerCase() === userAddr.toLowerCase();
                 const canEdit = isCreator && p.totalVotes.toNumber() === 0;
@@ -452,13 +462,13 @@
                 }
 
                 document.getElementById("qvUserStats").style.display = (p.mode === 1) ? "block" : "none";
-                if(p.mode === 1) document.getElementById("remainingCreditsText").innerText = `可用治理點數：${userCredits} 點`;
+                if(p.mode === 1) document.getElementById("remainingCreditsText").innerText = `當前剩餘點數：${userCredits} 點`;
 
                 const vUI = document.getElementById("votingUI");
                 vUI.innerHTML = candidates.map((c, i) => `
                     <div class="card" style="text-align:center">
                         <div class="cand-img-wrap"><img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://via.placeholder.com/220?text=Wait+IPFS'"></div>
-                        <h3>${c.name}</h3><p>累計票數: ${c.voteWeight.toString()} 票</p>
+                        <h3>${c.name}</h3><p>已累積: ${c.voteWeight.toString()} 票</p>
                         ${p.mode === 1 ? `
                             <input type="number" id="qv-input-${i}" placeholder="投票數" min="1" oninput="updateQVCost(${i})">
                             <div id="qv-cost-${i}" class="qv-info">耗：0 點</div>
@@ -479,7 +489,7 @@
         async function handleCastVote(pid, cid, type) {
             if(!isRegisteredOnChain) return notify("請先註冊身分", "error");
             let val = parseInt((type === 1) ? document.getElementById(`qv-input-${cid}`).value : "1");
-            if (isNaN(val) || val <= 0) return notify("票數錯誤", "warning");
+            if (isNaN(val) || val <= 0) return notify("票數不正確", "warning");
             if (type === 1 && val * val > userCredits) return notify("點數不足", "error");
 
             try {
@@ -502,6 +512,22 @@
             } catch (e) { notify("修改失敗", "error"); }
         }
 
+        // --- 新功能：刪除提案邏輯 ---
+        async function handleDeletePoll() {
+            if(!confirm("確定要刪除此提案嗎？此操作將從 UI 中移除並嘗試停用議案。")) return;
+            try {
+                notify("處理刪除請求中...", "info");
+                // 這裡嘗試將題目標記為已刪除，並停用標記 (若智慧合約支援 isActive 修改)
+                const tx = await contract.updatePollMetadata(currentPid, "[DELETED] " + document.getElementById("editTopic").value, [], []);
+                await tx.wait();
+                notify("提案已成功刪除", "success");
+                showPage('listPage');
+                renderPolls();
+            } catch (e) {
+                notify("刪除失敗：智慧合約權限不足", "error");
+            }
+        }
+
         async function handleCreatePoll() {
             if(!isRegisteredOnChain) return notify("請先註冊", "error");
             const btn = document.getElementById("submitCreateBtn");
@@ -520,7 +546,7 @@
             try {
                 notify("註冊中...", "info");
                 const tx = await contract.register("Governance_User", "default");
-                await tx.wait(); await syncUserDashboard(); updateUI();
+                await tx.wait(); confetti(); await syncUserDashboard(); updateUI();
                 notify("身分註冊成功！", "success");
             } catch (e) { notify("註冊失敗", "error"); }
         }
@@ -533,6 +559,9 @@
                 let html = "";
                 for(let i = count.toNumber() - 1; i >= 0; i--) {
                     const p = await contract.allPolls(i);
+                    // 過濾掉標記為 [DELETED] 的提案
+                    if (p.topic.startsWith("[DELETED]")) continue;
+
                     html += `<div class="card" onclick="viewDetail(${i})"><span class="cost-tag">#${i}</span><h3>${p.topic}</h3><p style="color:var(--muted)">累計票數：${p.totalVotes.toString()}</p><button class="btn-ghost" style="width:100%; margin-top:15px;">參與決策</button></div>`;
                 }
                 grid.innerHTML = html || '<p>尚無議案</p>';
@@ -553,7 +582,7 @@
             document.getElementById("navRep").innerText = "Rep: " + userRep;
             let lvl = "🌱 治理萌芽"; let fill = (userRep / 50) * 100;
             if (userRep > 50) { lvl = "🛡️ 治理執法者"; fill = ((userRep - 50) / 100) * 100; }
-            if (userRep > 150) { lvl = "👑 治理傳奇"; fill = ((userRep - 150) / 350) * 100; }
+            if (userRep > 150) { lvl = "👑 治理傳傳奇"; fill = ((userRep - 150) / 350) * 100; }
             document.getElementById("lvlTitle").innerText = "等級：" + lvl;
             document.getElementById("lvlFill").style.width = Math.min(fill, 100) + "%";
             document.getElementById("repStatus").innerText = `Reputation: ${userRep}`;
@@ -577,7 +606,6 @@
 
         // --- 核心修正：徹底解決無法登出問題 ---
         function disconnectWallet() { 
-            // 標記使用者已登出，直到手動連線前 init 不再自動連入
             sessionStorage.setItem('explicitLogout', 'true'); 
             userAddr = null; 
             isRegisteredOnChain = false;
@@ -586,7 +614,7 @@
             document.getElementById("discoBtn").style.display = "none";
             document.getElementById("netStatus").innerText = "尚未連接";
             document.getElementById("netStatus").classList.remove("net-ok");
-            notify("已成功斷開錢包連接", "info");
+            notify("已徹底斷開錢包連接", "info");
             setTimeout(() => location.reload(), 500);
         }
 
