@@ -54,7 +54,7 @@
         .title-wall { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; justify-content: center; }
         .title-badge { background: linear-gradient(135deg, var(--p), #818cf8); color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); }
 
-        /* 圓形頭像視覺 (優化) */
+        /* 圓形頭像視覺 (強制修復為圓形) */
         .cand-img-wrap { width: 180px; height: 180px; overflow: hidden; border-radius: 50%; margin: 0 auto 20px; background: #000; border: 4px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
         .cand-img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -103,7 +103,7 @@
                 <span id="navName">...</span>
                 <span id="navRep" style="color:var(--warning); font-weight:bold;">Rep: 0</span>
             </div>
-            <button id="connBtn" onclick="init()"><i class="fa-solid fa-wallet"></i> 連接錢包</button>
+            <button id="connBtn" onclick="connectWalletFlow()"><i class="fa-solid fa-wallet"></i> 連接錢包</button>
             <button id="discoBtn" class="btn-ghost" style="display:none" onclick="disconnectWallet()"><i class="fa-solid fa-right-from-bracket"></i></button>
             <button onclick="showPage('createPage')"><i class="fa-solid fa-plus"></i> 發起提案</button>
         </div>
@@ -111,7 +111,7 @@
 
     <div class="container">
 
-        <!-- 1. 引導頁面 (3 大支柱：不刪減) -->
+        <!-- 1. 引導頁面 (三大支柱：身分、共識、養成) -->
         <div id="guidePage" class="page active">
             <div class="card" style="text-align:center; padding:80px 40px;">
                 <h1 style="font-size:3.5rem; margin-bottom:20px;">UniGov 治理生態大廳</h1>
@@ -122,7 +122,7 @@
                     <div class="card" style="border-top: 5px solid var(--p);">
                         <i class="fa-solid fa-id-card fa-3x" style="color:var(--p); margin-bottom:20px;"></i>
                         <h3>身分主權與信譽</h3>
-                        <p>錢包即身分。每一項治理貢獻都將量化為聲譽值 (Rep)，這將決定您在組織中的發言權重，確保真實參與者的主權。</p>
+                        <p>錢包即身分。每一項治理貢獻都將量化為聲譽值 (Rep)，這將決定您在組織中的權力重量，確保真實參與者的主權。</p>
                     </div>
                     <div class="card" style="border-top: 5px solid var(--success);">
                         <i class="fa-solid fa-microchip fa-3x" style="color:var(--success); margin-bottom:20px;"></i>
@@ -225,7 +225,7 @@
             <div class="card" style="max-width:800px; margin:0 auto">
                 <h2>部署新治理提案</h2>
                 <label>議案標題</label>
-                <input type="text" id="topic" placeholder="例：2026 年度最佳治理項目">
+                <input type="text" id="topic" placeholder="例：誰是 2026 年度最佳治理項目？">
                 
                 <label>投票模式</label>
                 <select id="modeSelect">
@@ -299,11 +299,12 @@
         let provider, signer, userAddr, contract, userRep = 0, userCredits = 0, userTitles = [], isRegisteredOnChain = false;
         let chartInstance = null, currentPid = null;
 
+        // --- 核心修正：強化初始化邏輯，避免無謂報錯 ---
         async function init() {
             if (!window.ethereum) return notify("請安裝錢包", "error");
             provider = new ethers.providers.Web3Provider(window.ethereum);
             try {
-                // 檢查是否已連接過帳戶
+                // 嘗試靜默獲取已連接帳號，避免彈窗失敗導致的連線錯誤
                 const accounts = await provider.listAccounts();
                 if (accounts.length > 0) {
                     await setupSession(accounts[0]);
@@ -312,12 +313,19 @@
                     document.getElementById("netStatus").innerText = "尚未連接";
                 }
                 
-                // 監聽帳戶更換
-                window.ethereum.on('accountsChanged', (newAccounts) => {
-                    if (newAccounts.length === 0) disconnectWallet();
+                // 監聽 MetaMask 帳戶變更
+                window.ethereum.on('accountsChanged', (accs) => {
+                    if (accs.length === 0) disconnectWallet();
                     else location.reload();
                 });
-            } catch (e) { notify("系統初始化異常", "error"); }
+            } catch (e) { console.error("Init failed", e); }
+        }
+
+        async function connectWalletFlow() {
+            try {
+                const accs = await provider.send("eth_requestAccounts", []);
+                if(accs.length > 0) await setupSession(accs[0]);
+            } catch (e) { notify("使用者取消連線", "error"); }
         }
 
         async function setupSession(addr) {
@@ -340,7 +348,7 @@
                 notify("連線成功 (Sepolia)", "success");
             } catch (e) { 
                 console.error(e);
-                notify("連線失敗，請檢查網路狀態", "error"); 
+                notify("連線失敗，請檢查錢包狀態", "error"); 
             }
         }
 
@@ -368,12 +376,12 @@
             // 處理本地 Base64
             if (uid.startsWith('data:image')) return uid; 
 
-            // 正則提取 Qm... 或 bafy... (支援從 Pinata 管理頁面網址中自動提取)
+            // 正則提取 Qm... 或 bafy... (包含從 Pinata Cloud 網址中提取)
             const cidRegex = /(Qm[1-9A-HJ-NP-Za-km-z]{44}|bafy[a-zA-Z0-9]{40,})/;
             const match = uid.match(cidRegex);
             
             if (match) {
-                // 使用 Cloudflare 公共閘道，確保 Pinata CID 能順利解析
+                // 使用 Cloudflare 閘道確保 Pinata 圖片能順利解析
                 return `https://cloudflare-ipfs.com/ipfs/${match[0]}`;
             }
             
@@ -440,9 +448,9 @@
                 const vUI = document.getElementById("votingUI");
                 vUI.innerHTML = candidates.map((c, i) => `
                     <div class="card" style="text-align:center">
-                        <!-- 改為圓形投像框 -->
+                        <!-- 圓形頭像框 -->
                         <div class="cand-img-wrap"><img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://via.placeholder.com/220?text=Wait+IPFS'"></div>
-                        <h3>${c.name}</h3><p>累計得票: ${c.voteWeight.toString()} 票</p>
+                        <h3>${c.name}</h3><p>累計票數: ${c.voteWeight.toString()} 票</p>
                         ${p.mode === 1 ? `
                             <input type="number" id="qv-input-${i}" placeholder="欲投票數" min="1" oninput="updateQVCost(${i})">
                             <div id="qv-cost-${i}" class="qv-info">耗：0 點</div>
@@ -559,6 +567,7 @@
             }, 4000);
         }
 
+        // --- 核心修正：徹底修復登出功能 ---
         function disconnectWallet() { 
             userAddr = null; 
             isRegisteredOnChain = false;
@@ -569,7 +578,8 @@
             document.getElementById("netStatus").innerText = "尚未連接";
             document.getElementById("netStatus").classList.remove("net-ok");
             notify("已成功斷開錢包連接", "info");
-            setTimeout(() => location.reload(), 1000);
+            // 延遲刷新以清空合約實例
+            setTimeout(() => location.reload(), 800);
         }
 
         function showPage(id) {
