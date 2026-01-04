@@ -54,7 +54,7 @@
         .title-wall { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; justify-content: center; }
         .title-badge { background: linear-gradient(135deg, var(--p), #818cf8); color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); }
 
-        /* 圓形頭像視覺 */
+        /* 圓形頭像視覺 (強制修復) */
         .cand-img-wrap { width: 180px; height: 180px; overflow: hidden; border-radius: 50%; margin: 0 auto 20px; background: #111; border: 4px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.4); position: relative; display: flex; align-items: center; justify-content: center; }
         .cand-img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -89,7 +89,7 @@
 
     <nav class="nav">
         <div class="nav-brand" onclick="showPage('guidePage')"><i class="fa-solid fa-atom"></i> UniGov</div>
-        <div id="netStatus" class="net-badge">偵測中...</div>
+        <div id="netStatus" class="net-badge">正在偵測網路...</div>
         <div style="display:flex; gap:10px;">
             <button class="btn-ghost" onclick="showPage('guidePage')">大廳引導</button>
             <button class="btn-ghost" onclick="showPage('listPage')">治理大廳</button>
@@ -203,7 +203,7 @@
                     <div id="log">> 系統監聽啟動...</div>
                 </div>
                 <div>
-                    <h1>治理領袖排行</h1>
+                    <h1>領袖排行</h1>
                     <div class="card" id="leaderboardList"></div>
                 </div>
             </div>
@@ -245,7 +245,7 @@
                 <label>投票持續時間 (分鐘)</label>
                 <input type="number" id="duration" value="60">
                 
-                <button id="submitCreateBtn" onclick="handleCreatePoll()" style="width:100%; margin-top:30px; height:60px; font-size:1.2rem;">部署至區塊鏈</button>
+                <button id="submitCreateBtn" onclick="handleCreatePoll()" style="width:100%; margin-top:30px; height:60px; font-size:1.2rem;">部署至 Sepolia</button>
             </div>
         </div>
 
@@ -299,10 +299,18 @@
         let provider, signer, userAddr, contract, userRep = 0, userCredits = 0, userTitles = [], isRegisteredOnChain = false;
         let chartInstance = null, currentPid = null;
 
-        // --- 修復：進入頁面靜默檢查授權，不直接跳失敗 ---
+        // --- 核心修正：安靜初始化與登出邏輯 ---
         async function init() {
             if (!window.ethereum) return;
             provider = new ethers.providers.Web3Provider(window.ethereum);
+
+            // 檢查使用者是否手動選擇了「登出」
+            if (sessionStorage.getItem('userLoggedOut') === 'true') {
+                document.getElementById("connBtn").style.display = "block";
+                document.getElementById("netStatus").innerText = "尚未連接 (已登出)";
+                return;
+            }
+
             try {
                 const accs = await provider.listAccounts();
                 if (accs.length > 0) {
@@ -314,16 +322,20 @@
                 
                 window.ethereum.on('accountsChanged', (accs) => {
                     if (accs.length === 0) disconnectWallet();
-                    else location.reload();
+                    else {
+                        sessionStorage.removeItem('userLoggedOut');
+                        location.reload();
+                    }
                 });
-            } catch (e) { console.warn("Initialization silent check."); }
+            } catch (e) { console.warn("Init check pass."); }
         }
 
         async function connectWalletFlow() {
             try {
+                sessionStorage.removeItem('userLoggedOut'); // 點擊連線按鈕時清除登出標記
                 const accs = await provider.send("eth_requestAccounts", []);
                 if(accs.length > 0) await setupSession(accs[0]);
-            } catch (e) { notify("錢包連線失敗，請解鎖錢包並重試", "error"); }
+            } catch (e) { notify("連線失敗，請嘗試解鎖錢包", "error"); }
         }
 
         async function setupSession(addr) {
@@ -353,26 +365,25 @@
                 userRep = dashboard.reputation.toNumber();
                 userCredits = dashboard.credits.toNumber();
                 document.getElementById("regAlert").style.display = isRegisteredOnChain ? "none" : "block";
-                document.getElementById("netStatus").innerText = "Sepolia 已連線";
+                document.getElementById("netStatus").innerText = "Sepolia 已連接";
                 document.getElementById("netStatus").classList.add("net-ok");
                 document.getElementById("userInfo").style.display = "flex";
                 document.getElementById("connBtn").style.display = "none";
                 document.getElementById("discoBtn").style.display = "block";
             } catch (e) { 
-                // 處理未註冊導致的調用報錯
                 isRegisteredOnChain = false;
                 document.getElementById("regAlert").style.display = "block";
                 document.getElementById("netStatus").innerText = "已連線 (未註冊)";
             }
         }
 
-        // --- 修復：強力 CID 解析與圖片過濾 ---
+        // --- 強力 CID 解析與圖片過濾 ---
         function resolveCandidateImage(uid) {
             if (!uid || uid.length < 5) return `https://api.dicebear.com/7.x/identicon/svg?seed=${uid || 'UniGov'}`;
             uid = uid.trim();
             if (uid.startsWith('data:image')) return uid; 
 
-            // 正則匹配 Qm... 或 bafy...
+            // 正則匹配 Qm... 或 bafy... (支援 Pinata)
             const cidRegex = /(Qm[1-9A-HJ-NP-Za-km-z]{44}|bafy[a-zA-Z0-9]{40,})/;
             const match = uid.match(cidRegex);
             
@@ -392,7 +403,7 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 document.getElementById(targetId).value = e.target.result;
-                notify("本地圖片編碼完成", "success");
+                notify("本地圖片處理成功", "success");
             };
             reader.readAsDataURL(file);
         }
@@ -439,12 +450,11 @@
                 }
 
                 document.getElementById("qvUserStats").style.display = (p.mode === 1) ? "block" : "none";
-                if(p.mode === 1) document.getElementById("remainingCreditsText").innerText = `您的可用點數：${userCredits} 點`;
+                if(p.mode === 1) document.getElementById("remainingCreditsText").innerText = `當前可用餘額：${userCredits} 點`;
 
                 const vUI = document.getElementById("votingUI");
                 vUI.innerHTML = candidates.map((c, i) => `
                     <div class="card" style="text-align:center">
-                        <!-- 修復為圓形頭像 -->
                         <div class="cand-img-wrap"><img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://via.placeholder.com/220?text=Wait+IPFS'"></div>
                         <h3>${c.name}</h3><p>已累積: ${c.voteWeight.toString()} 票</p>
                         ${p.mode === 1 ? `
@@ -563,8 +573,9 @@
             }, 4000);
         }
 
-        // --- 修復：徹底重置登出狀態 ---
+        // --- 核心修正：徹底重置登出狀態 ---
         function disconnectWallet() { 
+            sessionStorage.setItem('userLoggedOut', 'true'); // 記錄手動登出標記
             userAddr = null; 
             isRegisteredOnChain = false;
             document.getElementById("userInfo").style.display = "none";
