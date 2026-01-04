@@ -85,7 +85,7 @@
         .leader-rep { color: var(--warning); font-weight: bold; font-size: 1.1rem; }
         .me-tag { background: var(--p); color: white; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: normal; }
 
-        .scanning-bar { padding: 15px; background: rgba(99, 102, 241, 0.1); border-radius: 15px; font-size: 0.85rem; margin-bottom: 15px; text-align: center; border: 1px dashed var(--p); color: var(--text); }
+        .scanning-bar { padding: 15px; background: rgba(99, 102, 241, 0.1); border-radius: 15px; font-size: 0.85rem; margin-bottom: 15px; text-align: center; border: 1px dashed var(--p); color: var(--text); cursor: pointer; }
         
         .countdown-wrap { background: rgba(0,0,0,0.3); padding: 10px 20px; border-radius: 15px; display: inline-flex; gap: 15px; border: 1px solid var(--border); margin-top: 10px; }
         .count-unit { display: flex; flex-direction: column; align-items: center; }
@@ -232,7 +232,7 @@
                 <div>
                     <h1>全網領袖排行 (3分鐘自動索引)</h1>
                     <div id="leaderboardList" class="card" style="padding:0; min-height: 400px; display:flex; flex-direction:column;">
-                        <div id="leaderScanStatus" class="scanning-bar"><i class="fa-solid fa-satellite-dish fa-spin"></i> 正在深度掃描全鏈地址中...</div>
+                        <div id="leaderScanStatus" class="scanning-bar" onclick="renderLeaderboard()"><i class="fa-solid fa-satellite-dish fa-spin"></i> 正在深度掃描全鏈地址中... (點擊刷新)</div>
                         <div id="leaderContent"></div>
                     </div>
                     <p style="font-size:0.7rem; color:var(--muted); text-align:center; margin-top:10px;">
@@ -371,7 +371,7 @@
                 loadPersistedData();
                 await syncUserDashboard();
                 renderPolls();
-                initChartFrame(); // 先行初始化圖表框架
+                initChartFrame(); 
                 renderLeaderboard();
                 notify("錢包連線成功", "success");
             } catch (e) { console.error(e); }
@@ -474,7 +474,6 @@
             const tc = document.getElementById("titleCollection"); if(tc) tc.innerHTML = userTitles.map(t => `<span class="title-badge">${t}</span>`).join('') || '<small>尚未獲取稱號</small>';
         }
 
-        // --- 核心修正：圖表框架先行初始化 ---
         function initChartFrame() {
             const ctx = document.getElementById('mainChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
@@ -485,7 +484,7 @@
             });
         }
 
-        // --- 核心加固：全鏈真實用戶掃描 (含錯誤分段保護) ---
+        // --- 核心修正：優化後的發現引擎 ---
         async function renderLeaderboard() {
             const list = document.getElementById("leaderContent");
             const scanStatus = document.getElementById("leaderScanStatus");
@@ -494,26 +493,31 @@
             try {
                 scanStatus.style.display = 'block';
                 const currentBlock = await provider.getBlockNumber();
-                // 擴大掃描範圍並優化
-                const startBlock = Math.max(DEPLOY_BLOCK, currentBlock - 100000); 
+                // 縮小單次掃描範圍至 10,000 區塊，確保 public RPC 不會超時卡死
+                const startBlock = Math.max(DEPLOY_BLOCK, currentBlock - 10000); 
                 
-                // 嘗試分段抓取事件，防止節點超時
-                const [regEvents, voteEvents, pollEvents] = await Promise.all([
-                    contract.queryFilter("UserRegistered", startBlock).catch(() => []),
-                    contract.queryFilter("VoteCast", startBlock).catch(() => []),
-                    contract.queryFilter("PollCreated", startBlock).catch(() => [])
+                // 使用 allSettled 分開抓取，防止單一事件抓取失敗導致全部卡死
+                const results = await Promise.allSettled([
+                    contract.queryFilter("UserRegistered", startBlock),
+                    contract.queryFilter("VoteCast", startBlock),
+                    contract.queryFilter("PollCreated", startBlock)
                 ]);
                 
                 const allAddresses = new Set();
-                regEvents.forEach(e => allAddresses.add(e.args.user || e.args[0]));
-                voteEvents.forEach(e => allAddresses.add(e.args.voter || e.args[1]));
-                pollEvents.forEach(e => allAddresses.add(e.args.creator || e.args[1]));
+                results.forEach(res => {
+                    if (res.status === 'fulfilled') {
+                        res.value.forEach(e => {
+                            const addr = e.args.user || e.args.voter || e.args.creator;
+                            if (addr) allAddresses.add(addr);
+                        });
+                    }
+                });
+                
                 if (userAddr) allAddresses.add(userAddr);
 
                 const leaderData = [];
                 const addrArray = Array.from(allAddresses);
                 
-                // 掃描前 15 名真實地址
                 for (let addr of addrArray.slice(0, 15)) {
                     try {
                         const dash = await contract.getUserDashboard(addr);
@@ -535,17 +539,18 @@
                         <span class="leader-rep">${l.rep} Rep</span>
                     </div>`).join('');
                 
-                // 更新圖表數據
+                // 圖表數據更新
                 if (chartInstance) {
-                    chartInstance.data.datasets[0].label = '全鏈治理活躍度 (已同步)';
-                    chartInstance.data.datasets[0].data = [voteEvents.length*0.4, voteEvents.length*0.7, voteEvents.length + pollEvents.length];
+                    const voteCount = results[1].status === 'fulfilled' ? results[1].value.length : 0;
+                    chartInstance.data.datasets[0].label = '全鏈治理活躍度 (最近 10,000 區塊)';
+                    chartInstance.data.datasets[0].data = [voteCount*0.4, voteCount*0.7, voteCount];
                     chartInstance.update();
                 }
 
                 scanStatus.style.display = 'none';
             } catch (e) { 
                 console.error(e);
-                scanStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 節點繁忙，請點擊排行再次刷新'; 
+                scanStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 節點繁忙，請點此再次嘗試刷新'; 
             }
         }
 
