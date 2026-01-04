@@ -47,20 +47,16 @@
 
         .card { background: var(--glass); border: 1px solid var(--border); border-radius: 24px; padding: 30px; margin-bottom: 20px; position: relative; overflow: hidden; }
 
-        /* 遊戲化視覺 */
+        /* 等級與稱號系統 */
         .lvl-container { margin: 25px 0; text-align: left; background: rgba(255,255,255,0.02); padding: 20px; border-radius: 15px; }
         .lvl-bar { width: 100%; height: 16px; background: rgba(0, 0, 0, 0.4); border-radius: 20px; overflow: hidden; border: 1px solid var(--border); margin-top: 10px; }
         .lvl-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #10b981, #f1c40f); width: 0%; transition: 2s ease; }
         .title-wall { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; justify-content: center; }
         .title-badge { background: linear-gradient(135deg, var(--p), #818cf8); color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); }
 
-        /* 圖片視覺 */
-        .cand-img-wrap { width: 100%; height: 220px; overflow: hidden; border-radius: 15px; margin-bottom: 15px; background: #000; border: 1px solid var(--border); }
+        /* 圓形頭像視覺 (優化) */
+        .cand-img-wrap { width: 180px; height: 180px; overflow: hidden; border-radius: 50%; margin: 0 auto 20px; background: #000; border: 4px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
         .cand-img { width: 100%; height: 100%; object-fit: cover; }
-
-        .wheel-wrap { position: relative; width: 340px; height: 340px; margin: 40px auto; }
-        #wheel { width: 100%; height: 100%; border-radius: 50%; border: 10px solid #1e293b; background: conic-gradient(#6366f1 0deg 72deg, #ec4899 72deg 144deg, #06b6d4 144deg 216deg, #f1c40f 216deg 288deg, #10b981 288deg 360deg); transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
-        .wheel-pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 40px solid var(--error); z-index: 10; }
 
         button { background: var(--p); color: white; border: none; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 8px; justify-content: center; }
         button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3); }
@@ -115,28 +111,28 @@
 
     <div class="container">
 
-        <!-- 1. 引導頁面 (3大支柱) -->
+        <!-- 1. 引導頁面 (3 大支柱：不刪減) -->
         <div id="guidePage" class="page active">
             <div class="card" style="text-align:center; padding:80px 40px;">
                 <h1 style="font-size:3.5rem; margin-bottom:20px;">UniGov 治理生態大廳</h1>
                 <p style="color:var(--muted); font-size:1.3rem; max-width:850px; margin:0 auto 50px;">
-                    2026 年最強去中心化引擎：整合身分主權、多維共識與榮譽養成。
+                    這是 2026 年最強大的去中心化治理引擎。整合身分主權、多維共識與榮譽養成。
                 </p>
                 <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:30px;">
                     <div class="card" style="border-top: 5px solid var(--p);">
                         <i class="fa-solid fa-id-card fa-3x" style="color:var(--p); margin-bottom:20px;"></i>
                         <h3>身分主權與信譽</h3>
-                        <p>錢包即身分。每一項治理貢獻都將量化為聲譽值 (Rep)，決定您在組織中的權力重量。</p>
+                        <p>錢包即身分。每一項治理貢獻都將量化為聲譽值 (Rep)，這將決定您在組織中的發言權重，確保真實參與者的主權。</p>
                     </div>
                     <div class="card" style="border-top: 5px solid var(--success);">
                         <i class="fa-solid fa-microchip fa-3x" style="color:var(--success); margin-bottom:20px;"></i>
                         <h3>多模式共識計票</h3>
-                        <p>內建一般、平方、排序、募資與權重五種計票模型，精準應對各類組織決策場景。</p>
+                        <p>系統內建五大計票模式，包含平方投票 (QV) 與排序投票 (Ranked Choice)，有效對抗大戶壟斷並追求群體最大共識。</p>
                     </div>
                     <div class="card" style="border-top: 5px solid var(--warning);">
                         <i class="fa-solid fa-award fa-3x" style="color:var(--warning); margin-bottom:20px;"></i>
                         <h3>榮譽養成與持久化</h3>
-                        <p>獲取的治理稱號永久保存在收藏室中。透過轉盤與信譽等級，打造屬於您的鏈上資歷。</p>
+                        <p>治理行為不再是一次性。透過轉盤、成就牆與信譽等級，獲取的每一份榮譽稱號都將與您的地址永久綁定且持久保存。</p>
                     </div>
                 </div>
                 <button style="margin:50px auto; padding:18px 50px; font-size:1.2rem;" onclick="showPage('listPage')">開啟共識之旅</button>
@@ -152,25 +148,25 @@
             <div id="pollGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap:24px;"></div>
         </div>
 
-        <!-- 3. 百科頁面 (五大模式不刪減) -->
+        <!-- 3. 百科頁面 (五大模式：不刪減) -->
         <div id="modeInfoPage" class="page">
             <h1>治理模式百科</h1>
             <div style="display:grid; gap:25px;">
-                <div class="card"><h2>一般 (Standard)</h2><p>一人一票，基礎民主基準。</p></div>
-                <div class="card"><h2>平方 (Quadratic)</h2><p>$成本 = 票數^2$。點數制度保護少數群體免受大戶霸凌。</p></div>
-                <div class="card"><h2>募資 (QF)</h2><p>配對資金池依據「貢獻人數」而非「總額」進行優化分配。</p></div>
-                <div class="card"><h2>排序 (Ranked Choice)</h2><p>投票者對候選人進行排序，選出大眾接受度最高者。</p></div>
-                <div class="card"><h2>權重 (Weighted)</h2><p>治理權依據代幣持倉比例決定。</p></div>
+                <div class="card"><h2>一般模式 (Standard)</h2><p>一人一票，基礎民主基準。</p></div>
+                <div class="card"><h2>平方投票 (Quadratic)</h2><p>$成本 = 票數^2$。點數制度保護少數群體免受大戶霸凌。</p></div>
+                <div class="card"><h2>平方募資 (QF)</h2><p>核心在於「參與人數」比「捐贈金額」更重要，常用於分配公共財資助。</p></div>
+                <div class="card"><h2>偏好排序 (Ranked Choice)</h2><p>投票者對候選人進行排序，選出大眾接受度最高者。</p></div>
+                <div class="card"><h2>權重投票 (Weighted)</h2><p>治理權依據代幣持倉比例決定。</p></div>
             </div>
         </div>
 
-        <!-- 4. 個人頁面 (稱號收藏不刪減) -->
+        <!-- 4. 個人頁面 -->
         <div id="profilePage" class="page">
             <div class="card" style="max-width:650px; margin:0 auto; text-align:center">
-                <h2>治理身分面板</h2>
+                <h2>治理者儀表板</h2>
                 <div id="regAlert" style="background:rgba(239,68,68,0.1); border:1px solid var(--error); padding:15px; border-radius:15px; margin-bottom:20px; display:none;">
-                    <b style="color:var(--error);"><i class="fa-solid fa-triangle-exclamation"></i> 您尚未註冊身分</b><br>
-                    <button onclick="handleRegisterOnChain()" class="btn-danger" style="margin:10px auto;">立即鏈上註冊</button>
+                    <b style="color:var(--error);"><i class="fa-solid fa-triangle-exclamation"></i> 尚未註冊身分</b><br>
+                    <button onclick="handleRegisterOnChain()" class="btn-danger" style="margin:10px auto;">執行鏈上註冊</button>
                 </div>
 
                 <img id="profileAvatar" src="" style="width:140px; height:140px; border-radius:50%; border:4px solid var(--p); margin: 20px 0; object-fit:cover;">
@@ -190,9 +186,11 @@
 
                 <div style="display:flex; gap:15px; margin:30px 0;">
                     <button onclick="handleDailyCheckIn()" style="flex:1; background:var(--success); height:55px;"><i class="fa-solid fa-calendar-check"></i> 每日簽到 (+10 Rep)</button>
-                    <button onclick="notify('已儲存至本地','success')" style="flex:1; height:55px;">更新個人資料</button>
+                    <button onclick="notify('已儲存至本地暫存','success')" style="flex:1; height:55px;">更新個人資料</button>
                 </div>
-                <button class="btn-danger" style="width:100%;" onclick="disconnectWallet()">斷開連接</button>
+                <button class="btn-danger" style="width:100%;" onclick="disconnectWallet()">
+                    <i class="fa-solid fa-right-from-bracket"></i> 斷開錢包連接 (登出)
+                </button>
             </div>
         </div>
 
@@ -202,10 +200,10 @@
                 <div>
                     <h1>數據統計看板</h1>
                     <div class="card"><canvas id="mainChart"></canvas></div>
-                    <div id="log">> 監聽中...</div>
+                    <div id="log">> 系統初始化中...</div>
                 </div>
                 <div>
-                    <h1>領袖榜</h1>
+                    <h1>領袖排行</h1>
                     <div class="card" id="leaderboardList"></div>
                 </div>
             </div>
@@ -227,24 +225,24 @@
             <div class="card" style="max-width:800px; margin:0 auto">
                 <h2>部署新治理提案</h2>
                 <label>議案標題</label>
-                <input type="text" id="topic" placeholder="例：誰是 2026 年度 MVP？">
+                <input type="text" id="topic" placeholder="例：2026 年度最佳治理項目">
                 
-                <label>投票模式 (五種不刪減)</label>
+                <label>投票模式</label>
                 <select id="modeSelect">
                     <option value="0">一般模式 (Standard)</option>
                     <option value="1">平方投票 (Quadratic)</option>
-                    <option value="2">平方募資 (QF)</option>
-                    <option value="3">偏好排序 (Ranked)</option>
-                    <option value="4">權重投票 (Weighted)</option>
+                    <option value="2">平方募資 (QF Matching)</option>
+                    <option value="3">偏好排序 (Ranked Choice)</option>
+                    <option value="4">權重投票 (Weighted Voting)</option>
                 </select>
 
                 <div style="margin-top:20px;">
-                    <h4>候選人設定 (支援 Pinata 網址 或 本地上傳)</h4>
+                    <h4>候選人設定 (貼上 Pinata 網址或從電腦上傳)</h4>
                     <div id="candidateInputsContainer"></div>
                     <button class="btn-ghost" onclick="addCandidateInput()" style="width:100%; margin-top:10px;"><i class="fa-solid fa-plus"></i> 新增選項</button>
                 </div>
 
-                <label>投票時長 (分鐘)</label>
+                <label>投票持續時間 (分鐘)</label>
                 <input type="number" id="duration" value="60">
                 
                 <button id="submitCreateBtn" onclick="handleCreatePoll()" style="width:100%; margin-top:30px; height:60px; font-size:1.2rem;">發佈至 Sepolia</button>
@@ -255,7 +253,6 @@
         <div id="detailPage" class="page">
             <div id="pollInfo" class="card" style="border-left: 8px solid var(--p);"></div>
             
-            <!-- 高級編輯面板 (0 票時可用：不刪減) -->
             <div id="creatorEditSection" class="card" style="display:none; border:2px solid var(--warning); background:rgba(241,196,15,0.05);">
                 <h3 style="color:var(--warning);"><i class="fa-solid fa-user-gear"></i> 發起人編輯權限 (0 票限定)</h3>
                 <label>修改議案標題</label>
@@ -265,7 +262,6 @@
                 <button onclick="handleEditPollMetadata()" class="btn-success" style="width:100%; margin-top:15px;">同步至區塊鏈</button>
             </div>
 
-            <!-- 心情反應 (不刪減) -->
             <div class="card" style="text-align:center">
                 <h4>對此案的「體感溫度」</h4>
                 <div class="sentiment-bar">
@@ -307,46 +303,80 @@
             if (!window.ethereum) return notify("請安裝錢包", "error");
             provider = new ethers.providers.Web3Provider(window.ethereum);
             try {
+                // 檢查是否已連接過帳戶
+                const accounts = await provider.listAccounts();
+                if (accounts.length > 0) {
+                    await setupSession(accounts[0]);
+                } else {
+                    document.getElementById("connBtn").style.display = "block";
+                    document.getElementById("netStatus").innerText = "尚未連接";
+                }
+                
+                // 監聽帳戶更換
+                window.ethereum.on('accountsChanged', (newAccounts) => {
+                    if (newAccounts.length === 0) disconnectWallet();
+                    else location.reload();
+                });
+            } catch (e) { notify("系統初始化異常", "error"); }
+        }
+
+        async function setupSession(addr) {
+            try {
                 const network = await provider.getNetwork();
-                if (network.chainId !== 11155111) await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: "0xaa36a7" }] });
-                await provider.send("eth_requestAccounts", []);
+                if (network.chainId !== 11155111) {
+                    notify("正在切換至 Sepolia...", "info");
+                    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: "0xaa36a7" }] });
+                }
+                
                 signer = provider.getSigner();
-                userAddr = await signer.getAddress();
+                userAddr = addr;
                 contract = new ethers.Contract(CONTRACT_ADDR, ABI, signer);
+                
                 await syncUserDashboard();
                 loadPersistedData();
                 updateUI();
                 renderPolls();
                 renderLeaderboard();
                 notify("連線成功 (Sepolia)", "success");
-            } catch (e) { notify("連線失敗", "error"); }
+            } catch (e) { 
+                console.error(e);
+                notify("連線失敗，請檢查網路狀態", "error"); 
+            }
         }
 
         async function syncUserDashboard() {
+            if (!contract || !userAddr) return;
             try {
                 const dashboard = await contract.getUserDashboard(userAddr);
                 isRegisteredOnChain = dashboard.isRegistered;
                 userRep = dashboard.reputation.toNumber();
                 userCredits = dashboard.credits.toNumber();
                 document.getElementById("regAlert").style.display = isRegisteredOnChain ? "none" : "block";
-                document.getElementById("netStatus").innerText = "Sepolia 已連接";
+                document.getElementById("netStatus").innerText = "Sepolia 已連線";
                 document.getElementById("netStatus").classList.add("net-ok");
-                document.getElementById("netStatus").style.display = "block";
-            } catch (e) { }
+                document.getElementById("userInfo").style.display = "flex";
+                document.getElementById("connBtn").style.display = "none";
+                document.getElementById("discoBtn").style.display = "block";
+            } catch (e) { console.error("同步失敗", e); }
         }
 
-        // --- 核心修正：Pinata CID 精準判讀邏輯 ---
+        // --- 核心修正：精準提取 CID 與 圖片解析 ---
         function resolveCandidateImage(uid) {
             if (!uid || uid.length < 5) return `https://api.dicebear.com/7.x/identicon/svg?seed=${uid || 'UniGov'}`;
             uid = uid.trim();
-            if (uid.startsWith('data:image')) return uid; 
             
-            // 正則提取 Qm... 或 bafy...
+            // 處理本地 Base64
+            if (uid.startsWith('data:image')) return uid; 
+
+            // 正則提取 Qm... 或 bafy... (支援從 Pinata 管理頁面網址中自動提取)
             const cidRegex = /(Qm[1-9A-HJ-NP-Za-km-z]{44}|bafy[a-zA-Z0-9]{40,})/;
             const match = uid.match(cidRegex);
+            
             if (match) {
+                // 使用 Cloudflare 公共閘道，確保 Pinata CID 能順利解析
                 return `https://cloudflare-ipfs.com/ipfs/${match[0]}`;
             }
+            
             if (uid.startsWith('http')) return uid;
             return `https://api.dicebear.com/7.x/identicon/svg?seed=${uid}`;
         }
@@ -368,7 +398,7 @@
             const index = container.children.length;
             const div = document.createElement("div"); div.className = "edit-card-row";
             div.innerHTML = `
-                <div class="edit-flex"><input type="text" class="cand-name" placeholder="選項名稱"><input type="text" id="cand-uid-${index}" class="cand-uid" placeholder="Pinata 網址或 CID"></div>
+                <div class="edit-flex"><input type="text" class="cand-name" placeholder="選項名稱"><input type="text" id="cand-uid-${index}" class="cand-uid" placeholder="貼上 Pinata 網址或 CID"></div>
                 <label class="file-label" for="file-${index}"><i class="fa-solid fa-upload"></i> 從電腦上傳</label>
                 <input type="file" id="file-${index}" style="display:none" accept="image/*" onchange="processImageUpload(this, 'cand-uid-${index}')">`;
             container.appendChild(div);
@@ -376,17 +406,17 @@
 
         async function viewDetail(pid) {
             currentPid = pid; showPage('detailPage');
-            document.getElementById("pollInfo").innerHTML = `<h2>鏈上讀取中...</h2>`;
+            document.getElementById("pollInfo").innerHTML = `<h2>讀取鏈上數據中...</h2>`;
             try {
                 const p = await contract.allPolls(pid);
                 const candidates = await contract.getCandidates(pid);
                 await syncUserDashboard();
 
-                const modes = ["一般", "平方 (QV)", "募資 (QF)", "排序 (Ranked)", "權重"];
+                const modeNames = ["一般", "平方 (QV)", "募資 (QF)", "排序 (Ranked)", "權重"];
                 document.getElementById("pollInfo").innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:start;">
                         <div><span class="cost-tag">#${pid}</span><h1>${p.topic}</h1></div>
-                        <span class="cost-tag" style="background:rgba(255,255,255,0.1)">${modes[p.mode]}模式</span>
+                        <span class="cost-tag" style="background:rgba(255,255,255,0.1)">${modeNames[p.mode]}模式</span>
                     </div>
                     <p style="font-size:0.8rem; color:var(--muted); margin-top:10px;">由 ${p.creator} 發起</p>`;
                 
@@ -399,7 +429,7 @@
                     container.innerHTML = candidates.map((c, i) => `
                         <div class="edit-card-row">
                             <div class="edit-flex"><input type="text" class="edit-cand-name" value="${c.name}"><input type="text" id="edit-uid-${i}" class="edit-cand-uid" value="${c.uid}"></div>
-                            <label class="file-label" for="edit-file-${i}"><i class="fa-solid fa-camera"></i> 更新圖片</label>
+                            <label class="file-label" for="edit-file-${i}"><i class="fa-solid fa-camera"></i> 更新圖片 (CID/上傳)</label>
                             <input type="file" id="edit-file-${i}" style="display:none" onchange="processImageUpload(this, 'edit-uid-${i}')">
                         </div>`).join('');
                 }
@@ -410,10 +440,11 @@
                 const vUI = document.getElementById("votingUI");
                 vUI.innerHTML = candidates.map((c, i) => `
                     <div class="card" style="text-align:center">
+                        <!-- 改為圓形投像框 -->
                         <div class="cand-img-wrap"><img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://via.placeholder.com/220?text=Wait+IPFS'"></div>
-                        <h3>${c.name}</h3><p>累計: ${c.voteWeight.toString()} 票</p>
+                        <h3>${c.name}</h3><p>累計得票: ${c.voteWeight.toString()} 票</p>
                         ${p.mode === 1 ? `
-                            <input type="number" id="qv-input-${i}" placeholder="票數" min="1" oninput="updateQVCost(${i})">
+                            <input type="number" id="qv-input-${i}" placeholder="欲投票數" min="1" oninput="updateQVCost(${i})">
                             <div id="qv-cost-${i}" class="qv-info">耗：0 點</div>
                             <button onclick="handleCastVote(${pid}, ${i}, 1)">平方投票</button>
                         ` : `<button onclick="handleCastVote(${pid}, ${i}, 0)">投下一票</button>`}
@@ -425,7 +456,7 @@
             const v = document.getElementById(`qv-input-${idx}`).value || 0;
             const cost = v * v;
             const el = document.getElementById(`qv-cost-${idx}`);
-            el.innerText = `預計耗能：${cost} 點`;
+            el.innerText = `預計消耗：${cost} 點`;
             el.style.color = cost > userCredits ? "var(--error)" : "var(--warning)";
         }
 
@@ -437,7 +468,7 @@
             if (type === 1 && val * val > userCredits) return notify("點數不足", "error");
 
             try {
-                notify("打包選票中，請稍候...", "info");
+                notify("打包選票中，請確認錢包...", "info");
                 const tx = await contract.castVote(pid, cid, val);
                 await tx.wait();
                 confetti(); viewDetail(pid);
@@ -465,7 +496,7 @@
             const us = Array.from(document.querySelectorAll(".cand-uid")).map(i => i.value);
             if(!topic || ns.length < 2) return notify("資訊不全", "error");
             try {
-                btn.disabled = true; btn.innerText = "區塊鏈作業中...";
+                btn.disabled = true; btn.innerText = "作業中...";
                 const tx = await contract.createPoll(topic, mode, ns, us, document.getElementById("duration").value);
                 await tx.wait(); confetti(); renderPolls(); showPage('listPage');
             } catch (e) { notify("失敗", "error"); } finally { btn.disabled = false; btn.innerText = "發送交易"; }
@@ -500,9 +531,6 @@
 
         function updateUI() {
             if (!userAddr) return;
-            document.getElementById("userInfo").style.display = "flex";
-            document.getElementById("connBtn").style.display = "none";
-            document.getElementById("discoBtn").style.display = "block";
             document.getElementById("navName").innerText = userAddr.substring(0, 6) + "...";
             document.getElementById("navAvatar").src = `https://api.dicebear.com/7.x/identicon/svg?seed=${userAddr}`;
             document.getElementById("profileAvatar").src = `https://api.dicebear.com/7.x/identicon/svg?seed=${userAddr}`;
@@ -531,7 +559,19 @@
             }, 4000);
         }
 
-        function disconnectWallet() { userAddr = null; location.reload(); }
+        function disconnectWallet() { 
+            userAddr = null; 
+            isRegisteredOnChain = false;
+            // 清除 MetaMask 的「已連線」狀態感官
+            document.getElementById("userInfo").style.display = "none";
+            document.getElementById("connBtn").style.display = "block";
+            document.getElementById("discoBtn").style.display = "none";
+            document.getElementById("netStatus").innerText = "尚未連接";
+            document.getElementById("netStatus").classList.remove("net-ok");
+            notify("已成功斷開錢包連接", "info");
+            setTimeout(() => location.reload(), 1000);
+        }
+
         function showPage(id) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
