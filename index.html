@@ -55,7 +55,7 @@
         .title-badge { background: linear-gradient(135deg, var(--p), #818cf8); color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); }
 
         /* 圓形頭像視覺 (強制修復為圓形) */
-        .cand-img-wrap { width: 180px; height: 180px; overflow: hidden; border-radius: 50%; margin: 0 auto 20px; background: #111; border: 4px solid var(--p); box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; display: flex; align-items: center; justify-content: center; }
+        .cand-img-wrap { width: 180px; height: 180px; overflow: hidden; border-radius: 50%; margin: 0 auto 20px; background: #111; border: 4px solid var(--p); box-shadow: 0 10px 30px rgba(0,0,0,0.4); position: relative; display: flex; align-items: center; justify-content: center; }
         .cand-img { width: 100%; height: 100%; object-fit: cover; }
 
         button { background: var(--p); color: white; border: none; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 8px; justify-content: center; }
@@ -126,7 +126,7 @@
                     </div>
                     <div class="card" style="border-top: 5px solid var(--success);">
                         <i class="fa-solid fa-microchip fa-3x" style="color:var(--success); margin-bottom:20px;"></i>
-                        <h3>多模式共識引擎</h3>
+                        <h3>多模式共識計票</h3>
                         <p>內建一般、平方、排序、募資與權重五種計票模型，靈活應對從行政預算到人事任免的各類決策場景。</p>
                     </div>
                     <div class="card" style="border-top: 5px solid var(--warning);">
@@ -148,11 +148,11 @@
             <div id="pollGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap:24px;"></div>
         </div>
 
-        <!-- 3. 百科頁面 -->
+        <!-- 3. 百科頁面 (五大模式介紹) -->
         <div id="modeInfoPage" class="page">
             <h1>治理模式百科全書</h1>
             <div style="display:grid; gap:25px;">
-                <div class="card"><h2>一般模式 (Standard)</h2><p>最純粹的「一人一票」。</p></div>
+                <div class="card"><h2>一般模式 (Standard)</h2><p>一人一票，基礎民主基準。</p></div>
                 <div class="card"><h2>平方投票 (Quadratic)</h2><p>成本隨票數平方增長，保護少數派意見表達強度。</p></div>
                 <div class="card"><h2>平方募資 (QF)</h2><p>聚焦於「參與人數」，優化公共財項目的匹配獎金分配。</p></div>
                 <div class="card"><h2>偏好排序 (Ranked Choice)</h2><p>透過選項排序選出群體接受度最高的公約數選項。</p></div>
@@ -272,7 +272,7 @@
             </div>
 
             <div id="qvUserStats" class="card" style="display:none; border:1px solid var(--warning);">
-                <p id="remainingCreditsText" style="margin:0; font-weight:bold;">剩餘點數：載入中...</p>
+                <p id="remainingCreditsText" style="margin:0; font-weight:bold;">可用點數：載入中...</p>
             </div>
 
             <div id="votingUI" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;"></div>
@@ -306,7 +306,7 @@
             // 檢查 SessionStorage，如果使用者剛剛點擊了「登出」，則不自動登入
             if (sessionStorage.getItem('explicitLogout') === 'true') {
                 document.getElementById("connBtn").style.display = "block";
-                document.getElementById("netStatus").innerText = "尚未連線 (已登出)";
+                document.getElementById("netStatus").innerText = "尚未連接錢包";
                 return;
             }
 
@@ -393,13 +393,13 @@
             // 處理本地上傳 Base64
             if (uid.startsWith('data:image')) return uid; 
 
-            // 正則匹配 CID (Qm... 或 bafy...)
-            // 修正正則，確保能從 Pinata 管理頁面 (含有 query params 等) 的網址中提取
-            const cidRegex = /(Qm[1-9A-HJ-NP-Za-km-z]{44}|bafy[a-zA-Z0-9]{40,})/;
+            // 正則匹配 CID (Qm... 或 baf... 或 bafy...)
+            // 修正正則，確保能從包含 CID 的字串或網址中提取最核心的編碼
+            const cidRegex = /(Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{58}|bafy[a-zA-Z0-9]{40,}|bafk[a-zA-Z0-9]{40,})/;
             const match = uid.match(cidRegex);
             
             if (match) {
-                // 使用 Cloudflare 閘道器，穩定解析 Pinata CID
+                // 使用 Cloudflare 閘道器，穩定解析任何 IPFS 供應商提供的 CID
                 return `https://cloudflare-ipfs.com/ipfs/${match[0]}`;
             }
             
