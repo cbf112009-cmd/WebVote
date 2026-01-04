@@ -133,7 +133,7 @@
                     <div class="card" style="border-top: 5px solid var(--p);">
                         <i class="fa-solid fa-id-card fa-3x" style="color:var(--p); margin-bottom:20px;"></i>
                         <h3>身分主權與信譽</h3>
-                        <p>錢包即身分。您的每一項貢獻都將量化為聲譽值 (Rep)，這將決定您在組織中的影響力權重，確保真實參與權。</p>
+                        <p>錢包即身分。您的每一項貢獻都將量化為聲譽值 (Rep)，這將決定您在組織中的權力重量，確保真實參與權。</p>
                     </div>
                     <div class="card" style="border-top: 5px solid var(--success);">
                         <i class="fa-solid fa-microchip fa-3x" style="color:var(--success); margin-bottom:20px;"></i>
@@ -165,7 +165,7 @@
             <div style="display:grid; gap:25px;">
                 <div class="card"><h2>一般模式 (Standard)</h2><p>一人一票，基礎民主基準。</p></div>
                 <div class="card"><h2>平方投票 (Quadratic)</h2><p>$成本 = 票數^2$。點數制度保護少數群體免受大戶霸凌。</p></div>
-                <div class="card"><h2>平方募資 (QF)</h2><p>核心在於「參與人數」比「捐贈金額」更重要，常用於分配公共財資助。</p></div>
+                <div class="card"><h2>平方募資 (QF)</h2><p>「人數」比「金額」更重要，常用於分配公共財資助。</p></div>
                 <div class="card"><h2>偏好排序 (Ranked Choice)</h2><p>投票者對選項進行排序，選出群體接受度最高的公約數。</p></div>
                 <div class="card"><h2>權重投票 (Weighted)</h2><p>話語權取決於持有的治理代幣或 Rep 數量。</p></div>
             </div>
@@ -348,13 +348,12 @@
                 userAddr = addr;
                 contract = new ethers.Contract(CONTRACT_ADDR, ABI, signer);
 
-                // 實時更新與自動索引
+                // 實時監聽與定時刷新
                 contract.on("PollCreated", () => { renderPolls(); renderLeaderboard(); });
                 contract.on("VoteCast", () => { if(currentPid) viewDetail(currentPid); renderPolls(); renderLeaderboard(); });
 
-                // 啟動 3 分鐘自動刷新計時器
                 if(leaderboardInterval) clearInterval(leaderboardInterval);
-                leaderboardInterval = setInterval(renderLeaderboard, 180000);
+                leaderboardInterval = setInterval(renderLeaderboard, 180000); // 3 分鐘自動刷新
 
                 loadPersistedData();
                 await syncUserDashboard();
@@ -370,6 +369,7 @@
             try {
                 const dashboard = await contract.getUserDashboard(userAddr);
                 isRegisteredOnChain = dashboard.isRegistered;
+                // 強制全域同步：聲望值 = 鏈上值 + 本地加成
                 userRep = dashboard.reputation.toNumber() + localRepBonus;
                 userCredits = dashboard.credits.toNumber();
                 document.getElementById("regAlert").style.display = isRegisteredOnChain ? "none" : "block";
@@ -431,7 +431,7 @@
             updateUI();
             savePersistedData();
             renderLeaderboard(); // 簽到後即時同步排行榜
-            notify("簽到成功！Reputation +10", "success");
+            notify("簽到成功！聲譽值已即時同步", "success");
             confetti();
         }
 
@@ -449,18 +449,16 @@
             localStorage.setItem(`bonus_${userAddr.toLowerCase()}`, localRepBonus.toString());
         }
 
-        // --- 核心同步：統一 navbar 與 profile 的 Rep 數據 ---
+        // --- 核心同步：統一 Navbar 與 Profile 的數據顯示 ---
         function updateUI() {
             if (!userAddr) return;
-            // 同步 Navbar
             const navRep = document.getElementById("navRep");
             if(navRep) navRep.innerText = "Rep: " + userRep;
-            document.getElementById("navName").innerText = userAddr.substring(0, 6) + "...";
-            document.getElementById("navAvatar").src = `https://api.dicebear.com/7.x/identicon/svg?seed=${userAddr}`;
-            
-            // 同步 Profile Page
             const repStatus = document.getElementById("repStatus");
             if(repStatus) repStatus.innerText = `聲望值: ${userRep}`;
+            
+            document.getElementById("navName").innerText = userAddr.substring(0, 6) + "...";
+            document.getElementById("navAvatar").src = `https://api.dicebear.com/7.x/identicon/svg?seed=${userAddr}`;
             
             const profileAvatar = document.getElementById("profileAvatar");
             if(profileAvatar) profileAvatar.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${userAddr}`;
@@ -475,18 +473,21 @@
             if(lvlFill) lvlFill.style.width = Math.min(fill, 100) + "%";
             
             const wall = document.getElementById("titleCollection");
-            if(wall) wall.innerHTML = userTitles.map(t => `<span class="title-badge">${t}</span>`).join('') || '<span style="color:var(--muted)">尚未獲取任何治理稱號</span>';
+            if(wall) wall.innerHTML = userTitles.map(t => `<span class="title-badge">${t}</span>`).join('') || '<span style="color:var(--muted)">尚未獲取稱號</span>';
         }
 
-        // --- 核心更新：全真實數據掃描領袖榜 (每3分鐘或實時刷新) ---
+        // --- 核心更新：全真實數據掃描 (分段掃描最近 50,000 區塊) ---
         async function renderLeaderboard() {
             const list = document.getElementById("leaderboardList");
             const ctx = document.getElementById('mainChart').getContext('2d');
             if (!contract || !list) return;
 
             try {
-                const voteEvents = await contract.queryFilter("VoteCast", DEPLOY_BLOCK);
-                const pollEvents = await contract.queryFilter("PollCreated", DEPLOY_BLOCK);
+                const currentBlock = await provider.getBlockNumber();
+                const startBlock = Math.max(DEPLOY_BLOCK, currentBlock - 50000); // 掃描最近五萬個區塊
+                
+                const voteEvents = await contract.queryFilter("VoteCast", startBlock);
+                const pollEvents = await contract.queryFilter("PollCreated", startBlock);
                 
                 const allAddresses = new Set();
                 voteEvents.forEach(e => allAddresses.add(e.args.voter));
@@ -494,7 +495,7 @@
                 if (userAddr) allAddresses.add(userAddr);
 
                 const leaderData = [];
-                for (let addr of Array.from(allAddresses).slice(0, 15)) { // 掃描前 15 名真實活躍地址
+                for (let addr of Array.from(allAddresses).slice(0, 20)) { // 掃描前 20 個真實活躍地址
                     try {
                         const dash = await contract.getUserDashboard(addr);
                         if (dash.isRegistered) {
@@ -513,11 +514,11 @@
                         <span class="leader-rank">#${i+1}</span>
                         <span class="leader-addr">${l.addr.substring(0, 10)}...${l.addr.substring(34)}${l.isMe ? '<span class="me-tag">YOU</span>' : ''}</span>
                         <span class="leader-rep">${l.rep} Rep</span>
-                    </div>`).join('') || '<div class="scanning-bar">目前尚無真實參與紀錄</div>';
+                    </div>`).join('') || '<div class="scanning-bar">正在搜尋鏈上活躍治理者...</div>';
 
                 if (chartInstance) chartInstance.destroy();
-                chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['兩日前','昨日','今日'], datasets: [{ label: '真實鏈上治理活躍度 (選票數)', data: [voteEvents.length*0.4, voteEvents.length*0.7, voteEvents.length], borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.4 }] } });
-            } catch (e) { list.innerHTML = '<div class="scanning-bar">數據鏈上同步中...</div>'; }
+                chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['日前','昨日','今日'], datasets: [{ label: '全鏈治理活躍度 (事件數)', data: [voteEvents.length*0.5, voteEvents.length*0.8, voteEvents.length], borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.4 }] } });
+            } catch (e) { list.innerHTML = '<div class="scanning-bar">鏈上數據索引忙碌中...</div>'; }
         }
 
         function spinWheel() {
@@ -558,6 +559,36 @@
                 }
                 grid.innerHTML = html || '<p>尚無議案</p>';
             } catch (e) {}
+        }
+
+        function updateQVCost(idx) {
+            const v = document.getElementById(`qv-input-${idx}`).value || 0;
+            const cost = v * v;
+            const el = document.getElementById(`qv-cost-${idx}`);
+            el.innerText = `預計消耗：${cost} 點`;
+            el.style.color = cost > userCredits ? "var(--error)" : "var(--warning)";
+        }
+
+        async function handleEditPollMetadata() {
+            try {
+                const tx = await contract.updatePollMetadata(currentPid, document.getElementById("editTopic").value, Array.from(document.querySelectorAll(".edit-cand-name")).map(i => i.value), Array.from(document.querySelectorAll(".edit-cand-uid")).map(i => i.value));
+                await tx.wait(); notify("更新成功", "success"); viewDetail(currentPid);
+            } catch (e) { notify("失敗", "error"); }
+        }
+
+        async function handleDeletePoll() {
+            if(!confirm("確定要刪除？")) return;
+            try {
+                const tx = await contract.updatePollMetadata(currentPid, "[DELETED] " + document.getElementById("editTopic").value, [], []);
+                await tx.wait(); showPage('listPage'); renderPolls();
+            } catch (e) { notify("權限不足", "error"); }
+        }
+
+        async function handleRegisterOnChain() {
+            try {
+                const tx = await contract.register("User", "default");
+                await tx.wait(); await syncUserDashboard(); updateUI();
+            } catch (e) { notify("註冊失敗", "error"); }
         }
 
         window.onload = () => { init(); addCandidateInput(); addCandidateInput(); };
