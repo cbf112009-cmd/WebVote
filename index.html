@@ -54,8 +54,8 @@
         .title-wall { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; justify-content: center; }
         .title-badge { background: linear-gradient(135deg, var(--p), #818cf8); color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); }
 
-        /* 圓形頭像視覺 (強制修復為圓形) */
-        .cand-img-wrap { width: 180px; height: 180px; overflow: hidden; border-radius: 50%; margin: 0 auto 20px; background: #111; border: 4px solid var(--p); box-shadow: 0 10px 30px rgba(0,0,0,0.4); position: relative; display: flex; align-items: center; justify-content: center; }
+        /* 圓形頭像視覺 (強化版) */
+        .cand-img-wrap { width: 180px; height: 180px; overflow: hidden; border-radius: 50%; margin: 0 auto 20px; background: #1a1a2e; border: 4px solid var(--p); box-shadow: 0 10px 40px rgba(99, 102, 241, 0.2); position: relative; display: flex; align-items: center; justify-content: center; }
         .cand-img { width: 100%; height: 100%; object-fit: cover; }
 
         button { background: var(--p); color: white; border: none; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 8px; justify-content: center; }
@@ -152,7 +152,7 @@
         <div id="modeInfoPage" class="page">
             <h1>治理模式百科全書</h1>
             <div style="display:grid; gap:25px;">
-                <div class="card"><h2>一般模式 (Standard)</h2><p>一人一票，基礎民主基準。</p></div>
+                <div class="card"><h2>一般模式 (Standard)</h2><p>最純粹的「一人一票」。</p></div>
                 <div class="card"><h2>平方投票 (Quadratic)</h2><p>成本隨票數平方增長，保護少數派意見表達強度。</p></div>
                 <div class="card"><h2>平方募資 (QF)</h2><p>聚焦於「參與人數」，優化公共財項目的匹配獎金分配。</p></div>
                 <div class="card"><h2>偏好排序 (Ranked Choice)</h2><p>透過選項排序選出群體接受度最高的公約數選項。</p></div>
@@ -298,12 +298,12 @@
         let provider, signer, userAddr, contract, userRep = 0, userCredits = 0, userTitles = [], isRegisteredOnChain = false;
         let chartInstance = null, currentPid = null;
 
-        // --- 核心修正：安靜初始化與登出意志標記 ---
+        // --- 核心修正：安靜初始化與強制登出標記 ---
         async function init() {
             if (!window.ethereum) return;
             provider = new ethers.providers.Web3Provider(window.ethereum);
 
-            // 檢查 SessionStorage，如果使用者剛剛點擊了「登出」，則不自動登入
+            // 如果偵測到「已登出」標記，則不自動執行連線
             if (sessionStorage.getItem('explicitLogout') === 'true') {
                 document.getElementById("connBtn").style.display = "block";
                 document.getElementById("netStatus").innerText = "尚未連接錢包";
@@ -311,10 +311,9 @@
             }
 
             try {
-                // 嘗試獲取已授權帳號
-                const accs = await provider.listAccounts();
-                if (accs.length > 0) {
-                    await setupSession(accs[0]);
+                const accounts = await provider.listAccounts();
+                if (accounts.length > 0) {
+                    await setupSession(accounts[0]);
                 } else {
                     document.getElementById("connBtn").style.display = "block";
                     document.getElementById("netStatus").innerText = "尚未連接錢包";
@@ -327,20 +326,15 @@
                         location.reload();
                     }
                 });
-            } catch (e) { 
-                console.warn("Init scan pass."); 
-            }
+            } catch (e) { console.warn("Init scan bypass."); }
         }
 
         async function connectWalletFlow() {
             try {
-                // 使用者手動點擊連線，清除登出標記
-                sessionStorage.removeItem('explicitLogout');
+                sessionStorage.removeItem('explicitLogout'); 
                 const accs = await provider.send("eth_requestAccounts", []);
                 if(accs.length > 0) await setupSession(accs[0]);
-            } catch (e) { 
-                notify("連線失敗，請檢查錢包狀態", "error"); 
-            }
+            } catch (e) { notify("連線失敗，請檢查錢包狀態", "error"); }
         }
 
         async function setupSession(addr) {
@@ -359,9 +353,7 @@
                 renderPolls();
                 renderLeaderboard();
                 notify("連線成功 (Sepolia)", "success");
-            } catch (e) { 
-                console.error("Session Setup Error:", e);
-            }
+            } catch (e) { console.error(e); }
         }
 
         async function syncUserDashboard() {
@@ -378,14 +370,13 @@
                 document.getElementById("connBtn").style.display = "none";
                 document.getElementById("discoBtn").style.display = "block";
             } catch (e) { 
-                // 處理帳號存在但未註冊導致的合約回退報錯
                 isRegisteredOnChain = false;
                 document.getElementById("regAlert").style.display = "block";
                 document.getElementById("netStatus").innerText = "已連線 (未註冊)";
             }
         }
 
-        // --- 強力 CID 解析：徹底解析 Pinata 與 IPFS ---
+        // --- 強力 CID 解析：徹底解析包含 bafk 在內的所有 IPFS 格式 ---
         function resolveCandidateImage(uid) {
             if (!uid || uid.length < 5) return `https://api.dicebear.com/7.x/identicon/svg?seed=${uid || 'UniGov'}`;
             uid = uid.trim();
@@ -393,14 +384,14 @@
             // 處理本地上傳 Base64
             if (uid.startsWith('data:image')) return uid; 
 
-            // 正則匹配 CID (Qm... 或 baf... 或 bafy...)
-            // 修正正則，確保能從包含 CID 的字串或網址中提取最核心的編碼
+            // 強化正規表達式：支援 Qm...、bafy...、bafk... (v0 & v1)
+            // 修正為捕捉最核心的編碼字串
             const cidRegex = /(Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{58}|bafy[a-zA-Z0-9]{40,}|bafk[a-zA-Z0-9]{40,})/;
             const match = uid.match(cidRegex);
             
             if (match) {
-                // 使用 Cloudflare 閘道器，穩定解析任何 IPFS 供應商提供的 CID
-                return `https://cloudflare-ipfs.com/ipfs/${match[0]}`;
+                // 使用 ipfs.io 閘道，對 v1 CID 的相容性較佳
+                return `https://ipfs.io/ipfs/${match[0]}`;
             }
             
             if (uid.startsWith('http')) return uid;
@@ -444,7 +435,7 @@
                         <div><span class="cost-tag">#${pid}</span><h1>${p.topic}</h1></div>
                         <span class="cost-tag" style="background:rgba(255,255,255,0.1)">${modeNames[p.mode]}模式</span>
                     </div>
-                    <p style="font-size:0.8rem; color:var(--muted); margin-top:10px;">由地址 ${p.creator} 發佈</p>`;
+                    <p style="font-size:0.8rem; color:var(--muted); margin-top:10px;">發起者：${p.creator}</p>`;
                 
                 const isCreator = p.creator.toLowerCase() === userAddr.toLowerCase();
                 const canEdit = isCreator && p.totalVotes.toNumber() === 0;
@@ -461,14 +452,13 @@
                 }
 
                 document.getElementById("qvUserStats").style.display = (p.mode === 1) ? "block" : "none";
-                if(p.mode === 1) document.getElementById("remainingCreditsText").innerText = `當前剩餘點數：${userCredits} 點`;
+                if(p.mode === 1) document.getElementById("remainingCreditsText").innerText = `可用治理點數：${userCredits} 點`;
 
                 const vUI = document.getElementById("votingUI");
                 vUI.innerHTML = candidates.map((c, i) => `
                     <div class="card" style="text-align:center">
-                        <!-- 圓形頭像視覺 -->
                         <div class="cand-img-wrap"><img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://via.placeholder.com/220?text=Wait+IPFS'"></div>
-                        <h3>${c.name}</h3><p>已累積: ${c.voteWeight.toString()} 票</p>
+                        <h3>${c.name}</h3><p>累計票數: ${c.voteWeight.toString()} 票</p>
                         ${p.mode === 1 ? `
                             <input type="number" id="qv-input-${i}" placeholder="投票數" min="1" oninput="updateQVCost(${i})">
                             <div id="qv-cost-${i}" class="qv-info">耗：0 點</div>
@@ -489,7 +479,7 @@
         async function handleCastVote(pid, cid, type) {
             if(!isRegisteredOnChain) return notify("請先註冊身分", "error");
             let val = parseInt((type === 1) ? document.getElementById(`qv-input-${cid}`).value : "1");
-            if (isNaN(val) || val <= 0) return notify("票數不正確", "warning");
+            if (isNaN(val) || val <= 0) return notify("票數錯誤", "warning");
             if (type === 1 && val * val > userCredits) return notify("點數不足", "error");
 
             try {
@@ -503,7 +493,7 @@
 
         async function handleEditPollMetadata() {
             try {
-                notify("鏈上同步中...", "info");
+                notify("執行鏈上更新...", "info");
                 const newT = document.getElementById("editTopic").value;
                 const ns = Array.from(document.querySelectorAll(".edit-cand-name")).map(i => i.value);
                 const us = Array.from(document.querySelectorAll(".edit-cand-uid")).map(i => i.value);
@@ -528,9 +518,9 @@
 
         async function handleRegisterOnChain() {
             try {
-                notify("執行註冊程序...", "info");
+                notify("註冊中...", "info");
                 const tx = await contract.register("Governance_User", "default");
-                await tx.wait(); confetti(); await syncUserDashboard(); updateUI();
+                await tx.wait(); await syncUserDashboard(); updateUI();
                 notify("身分註冊成功！", "success");
             } catch (e) { notify("註冊失敗", "error"); }
         }
@@ -585,23 +575,18 @@
             }, 4000);
         }
 
-        // --- 核心修正：徹底解決無法登出的問題 ---
+        // --- 核心修正：徹底解決無法登出問題 ---
         function disconnectWallet() { 
-            // 1. 設置手動登出標記
+            // 標記使用者已登出，直到手動連線前 init 不再自動連入
             sessionStorage.setItem('explicitLogout', 'true'); 
             userAddr = null; 
             isRegisteredOnChain = false;
-            
-            // 2. 視覺重置
             document.getElementById("userInfo").style.display = "none";
             document.getElementById("connBtn").style.display = "block";
             document.getElementById("discoBtn").style.display = "none";
             document.getElementById("netStatus").innerText = "尚未連接";
             document.getElementById("netStatus").classList.remove("net-ok");
-            
-            notify("已徹底中斷連線", "info");
-            
-            // 3. 延遲刷新以清空所有記憶體變數
+            notify("已成功斷開錢包連接", "info");
             setTimeout(() => location.reload(), 500);
         }
 
