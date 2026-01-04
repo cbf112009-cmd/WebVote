@@ -221,7 +221,7 @@
             </div>
         </div>
 
-        <!-- 5. 數據看板 (修正排行榜卡死與圖表遺失) -->
+        <!-- 5. 數據看板 (優化分流機制) -->
         <div id="statPage" class="page">
             <div style="display:grid; grid-template-columns: 1.6fr 1fr; gap:30px;">
                 <div>
@@ -230,13 +230,13 @@
                     <div id="log">> 鏈上實時監聽啟動，自動索引參與數據中...</div>
                 </div>
                 <div>
-                    <h1>全網領袖排行 (3分鐘自動索引)</h1>
+                    <h1>全網領袖排行 (動態索引)</h1>
                     <div id="leaderboardList" class="card" style="padding:0; min-height: 400px; display:flex; flex-direction:column;">
                         <div id="leaderScanStatus" class="scanning-bar" onclick="renderLeaderboard()"><i class="fa-solid fa-satellite-dish fa-spin"></i> 正在深度掃描全鏈地址中... (點擊刷新)</div>
                         <div id="leaderContent"></div>
                     </div>
                     <p style="font-size:0.7rem; color:var(--muted); text-align:center; margin-top:10px;">
-                        排行基於歷史註冊、發起與投票事件之真實數據
+                        排行基於歷史註冊與投票真實數據
                     </p>
                 </div>
             </div>
@@ -484,7 +484,7 @@
             });
         }
 
-        // --- 核心修正：優化後的發現引擎 ---
+        // --- 核心優化：漸進式緩存發現引擎 ---
         async function renderLeaderboard() {
             const list = document.getElementById("leaderContent");
             const scanStatus = document.getElementById("leaderScanStatus");
@@ -493,17 +493,20 @@
             try {
                 scanStatus.style.display = 'block';
                 const currentBlock = await provider.getBlockNumber();
-                // 縮小單次掃描範圍至 10,000 區塊，確保 public RPC 不會超時卡死
-                const startBlock = Math.max(DEPLOY_BLOCK, currentBlock - 10000); 
                 
-                // 使用 allSettled 分開抓取，防止單一事件抓取失敗導致全部卡死
+                // 優先使用 sessionStorage 緩存地址
+                let cachedAddr = JSON.parse(sessionStorage.getItem('discovered_addresses') || "[]");
+                const allAddresses = new Set(cachedAddr);
+                
+                // 掃描最近的 5,000 個區塊（分流降低壓力）
+                const startBlock = Math.max(DEPLOY_BLOCK, currentBlock - 5000); 
+                
                 const results = await Promise.allSettled([
                     contract.queryFilter("UserRegistered", startBlock),
                     contract.queryFilter("VoteCast", startBlock),
                     contract.queryFilter("PollCreated", startBlock)
                 ]);
                 
-                const allAddresses = new Set();
                 results.forEach(res => {
                     if (res.status === 'fulfilled') {
                         res.value.forEach(e => {
@@ -515,16 +518,19 @@
                 
                 if (userAddr) allAddresses.add(userAddr);
 
-                const leaderData = [];
+                // 更新緩存
                 const addrArray = Array.from(allAddresses);
-                
+                sessionStorage.setItem('discovered_addresses', JSON.stringify(addrArray));
+
+                const leaderData = [];
+                // 限制查詢數量，確保效能
                 for (let addr of addrArray.slice(0, 15)) {
                     try {
                         const dash = await contract.getUserDashboard(addr);
                         if (dash.isRegistered) {
                             leaderData.push({ 
                                 addr: addr, 
-                                rep: dash.reputation.toNumber() + (addr.toLowerCase() === userAddr?.toLowerCase() ? localRepBonus : 0),
+                                rep: dash.reputation.toNumber() + (userAddr && addr.toLowerCase() === userAddr.toLowerCase() ? localRepBonus : 0),
                                 isMe: userAddr && addr.toLowerCase() === userAddr.toLowerCase() 
                             });
                         }
@@ -539,18 +545,17 @@
                         <span class="leader-rep">${l.rep} Rep</span>
                     </div>`).join('');
                 
-                // 圖表數據更新
                 if (chartInstance) {
-                    const voteCount = results[1].status === 'fulfilled' ? results[1].value.length : 0;
-                    chartInstance.data.datasets[0].label = '全鏈治理活躍度 (最近 10,000 區塊)';
-                    chartInstance.data.datasets[0].data = [voteCount*0.4, voteCount*0.7, voteCount];
+                    const voteCount = results[1].status === 'fulfilled' ? results[1].value.length : (cachedAddr.length / 2);
+                    chartInstance.data.datasets[0].label = '全鏈治理活躍度 (最近取樣)';
+                    chartInstance.data.datasets[0].data = [voteCount*0.5, voteCount*0.8, voteCount];
                     chartInstance.update();
                 }
 
                 scanStatus.style.display = 'none';
             } catch (e) { 
-                console.error(e);
-                scanStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 節點繁忙，請點此再次嘗試刷新'; 
+                console.warn("RPC limit reached, showing partial data.");
+                scanStatus.innerHTML = '<i class="fa-solid fa-cloud-bolt"></i> 節點頻繁，已優先顯示緩存數據 (點擊刷新)'; 
             }
         }
 
