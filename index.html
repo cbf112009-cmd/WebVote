@@ -47,14 +47,14 @@
 
         .card { background: var(--glass); border: 1px solid var(--border); border-radius: 24px; padding: 30px; margin-bottom: 20px; position: relative; overflow: hidden; }
 
-        /* 稱號牆與等級進度 */
+        /* 等級與稱號牆 */
         .title-wall { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; justify-content: center; }
         .title-badge { background: linear-gradient(135deg, var(--p), #818cf8); color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); border: 1px solid rgba(255,255,255,0.1); }
         .lvl-container { margin: 25px 0; text-align: left; background: rgba(255,255,255,0.02); padding: 20px; border-radius: 15px; }
         .lvl-bar { width: 100%; height: 16px; background: rgba(0, 0, 0, 0.4); border-radius: 20px; overflow: hidden; border: 1px solid var(--border); margin-top: 10px; }
         .lvl-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #10b981, #f1c40f); width: 0%; transition: 2s ease; }
 
-        /* 候選人卡片圖片優化 */
+        /* 候選人卡片圖片 */
         .cand-img {
             width: 100%; height: 200px; object-fit: cover; border-radius: 15px; 
             margin-bottom: 15px; border: 1px solid var(--border); background: #000;
@@ -72,7 +72,7 @@
         .btn-success { background: var(--success); }
 
         label { display: block; margin-top: 15px; color: var(--muted); font-size: 0.9rem; font-weight: 600; }
-        input, select, textarea { width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border); color: #fff; border-radius: 10px; margin: 10px 0; outline: none; }
+        input, select, textarea { width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border); color: #fff; border-radius: 10px; margin: 8px 0; outline: none; }
 
         .mode-section { background: rgba(99, 102, 241, 0.05); padding: 20px; border-radius: 15px; border-left: 4px solid var(--p); margin: 15px 0; display: none; }
         #toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
@@ -84,6 +84,15 @@
         .sentiment-bar { display: flex; gap: 15px; justify-content: center; margin: 20px 0; }
         .sentiment-btn { background: var(--glass); border: 1px solid var(--border); padding: 10px 20px; border-radius: 50px; cursor: pointer; color: var(--text); font-size: 1.1rem; }
         .sentiment-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+
+        /* 排序列表 */
+        #sortList { list-style: none; padding: 0; }
+        .sort-item { background: var(--glass); padding: 15px; margin: 8px 0; border-radius: 12px; border: 1px solid var(--border); cursor: grab; display: flex; align-items: center; gap: 15px; }
+
+        .qv-info { font-size: 0.85rem; color: var(--warning); margin-top: 5px; font-weight: bold; }
+
+        /* 編輯選區容器 */
+        .edit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 10px; }
     </style>
 </head>
 
@@ -124,17 +133,17 @@
                     <div class="card">
                         <i class="fa-solid fa-cloud-arrow-up fa-3x" style="color:var(--p); margin-bottom:20px;"></i>
                         <h3>IPFS CID 支援</h3>
-                        <p>提案支援載入 IPFS CID，實現去中心化多媒體展示，優化治理視覺體驗。</p>
+                        <p>提案支援載入 IPFS CID 或本地藝人圖片，實現去中心化多媒體展示。</p>
                     </div>
                     <div class="card">
                         <i class="fa-solid fa-id-card-clip fa-3x" style="color:var(--success); margin-bottom:20px;"></i>
                         <h3>鏈上身分系統</h3>
-                        <p>一鍵註冊獲取投票權，累積信譽值 (Rep) 以解鎖稀有稱號與特殊權限。</p>
+                        <p>一鍵註冊獲取投票權，累積信譽值 (Rep) 以解鎖稀有稱號。</p>
                     </div>
                     <div class="card">
                         <i class="fa-solid fa-shield-halved fa-3x" style="color:var(--warning); margin-bottom:20px;"></i>
                         <h3>發起人編輯鎖</h3>
-                        <p>獨創安全機制：僅在無人投票前允許發起人修改，兼顧彈性與共識誠信。</p>
+                        <p>獨創安全機制：僅在無人投票前允許發起人修改，包含標題、選項與圖片 UID。</p>
                     </div>
                 </div>
                 <button style="margin:50px auto; padding:18px 50px; font-size:1.2rem;" onclick="showPage('listPage')">開啟共識之旅</button>
@@ -147,7 +156,7 @@
                 <h1>鏈上治理議案中心</h1>
                 <div style="display:flex; gap:10px;">
                     <button class="btn-ghost" onclick="renderPolls()"><i class="fa-solid fa-rotate"></i> 刷新列表</button>
-                    <input type="text" id="searchBar" onkeyup="filterPolls()" placeholder="搜尋標題、UID 或發起人..." style="width:300px; margin:0;">
+                    <input type="text" id="searchBar" onkeyup="filterPolls()" placeholder="搜尋關鍵字..." style="width:300px; margin:0;">
                 </div>
             </div>
             <div id="pollGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap:24px;"></div>
@@ -158,9 +167,9 @@
             <h1>治理模式百科全書</h1>
             <div style="display:grid; gap:25px;">
                 <div class="card"><h2>一般模式 (Standard)</h2><p>基礎的一人一票機制，權重均等。</p></div>
-                <div class="card"><h2>平方投票 (Quadratic Voting)</h2><p>公式 $成本 = 票數^2$。防止大戶壟斷。</p></div>
-                <div class="card"><h2>平方募資 (Quadratic Funding)</h2><p>核心理念：「人數比金額重要」。</p></div>
-                <div class="card"><h2>偏好排序 (Ranked Choice)</h2><p>投票者對候選人進行排序，自動轉移票權。</p></div>
+                <div class="card"><h2>平方投票 (Quadratic Voting)</h2><p>公式 $成本 = 票數^2$。有效防止大戶壟斷。</p></div>
+                <div class="card"><h2>平方募資 (Quadratic Funding)</h2><p>核心理念：「人數比金額更重要」。獎金池依貢獻人數分配。</p></div>
+                <div class="card"><h2>偏好排序 (Ranked Choice)</h2><p>投票者對候選人進行排序。</p></div>
                 <div class="card"><h2>權重投票 (Weighted Voting)</h2><p>話語權取決於持有的代幣數量。</p></div>
             </div>
         </div>
@@ -182,7 +191,6 @@
                         <span id="repStatus">Rep: 0 / 100</span>
                     </div>
                     <div class="lvl-bar"><div id="lvlFill" class="lvl-fill"></div></div>
-                    <small id="lvlHint" style="color:var(--muted); margin-top:5px; display:block;">再獲得一些 Rep 即可升級</small>
                 </div>
 
                 <div style="margin-top:20px; border:1px dashed var(--border); padding:20px; border-radius:20px;">
@@ -199,11 +207,9 @@
 
                 <div style="text-align:left; background:rgba(0,0,0,0.2); padding:25px; border-radius:20px;">
                     <label>暱稱</label><input type="text" id="editName" placeholder="輸入您的新暱稱">
-                    <label>頭像 IPFS CID</label><input type="text" id="editAvatar" placeholder="https://...">
+                    <label>頭像連結</label><input type="text" id="editAvatar">
                 </div>
-                <button class="btn-danger" style="width:100%; margin-top:30px;" onclick="disconnectWallet()">
-                    <i class="fa-solid fa-power-off"></i> 斷開錢包 (登出)
-                </button>
+                <button class="btn-danger" style="width:100%; margin-top:30px;" onclick="disconnectWallet()">斷開錢包</button>
             </div>
         </div>
 
@@ -240,7 +246,7 @@
                 <h2>發起新治理議案 (Create)</h2>
                 
                 <label>議案標題</label>
-                <input type="text" id="topic" placeholder="例如：2026 年度治理參數升級案">
+                <input type="text" id="topic" placeholder="例如：2026 年度熱門歌手大賞">
                 
                 <label>選擇投票模式</label>
                 <select id="modeSelect" onchange="toggleModeFields()">
@@ -253,7 +259,7 @@
 
                 <div id="setup-qv" class="mode-section">
                     <h4>平方投票參數</h4>
-                    <label>每位參與者發放的初始點數 (Voice Credits)</label><input type="number" id="qv-credits" value="100">
+                    <label>每位參與者發放的初始治理點數</label><input type="number" id="qv-credits" value="100">
                 </div>
 
                 <div id="setup-qf" class="mode-section">
@@ -261,8 +267,8 @@
                     <label>匹配池總額 (USDC)</label><input type="number" id="qf-pool" value="1000">
                 </div>
 
-                <label>候選人名稱 (逗號隔開)</label><input type="text" id="names" placeholder="項目 A, 項目 B">
-                <label>候選人 UID (填入名稱或 IPFS CID，留空自動補全)</label><input type="text" id="uids" placeholder="ID-001, Qm...">
+                <label>候選人名稱 (逗號隔開)</label><input type="text" id="names" placeholder="周杰倫, 蔡依林, 伍佰">
+                <label>候選人 UID (填入圖片名稱或 CID)</label><input type="text" id="uids" placeholder="周杰倫, Qm...">
                 <label>投票持續時間 (分鐘)</label><input type="number" id="duration" value="60">
                 
                 <button id="submitCreateBtn" onclick="handleCreatePoll()" style="width:100%; margin-top:30px; height:60px; font-size:1.2rem;">
@@ -275,21 +281,28 @@
         <div id="detailPage" class="page">
             <div id="pollInfo" class="card" style="border-left: 8px solid var(--p);"></div>
             
-            <!-- 10. 發起人編輯權限 (僅在票數為0時顯示) -->
             <div id="creatorEditSection" class="card" style="display:none; border:2px solid var(--warning); background:rgba(241,196,15,0.05);">
                 <h3 style="color:var(--warning);"><i class="fa-solid fa-user-gear"></i> 發起人編輯面板 (尚無投票)</h3>
-                <p>您可以在第一張票投出前修改標題。</p>
+                <label>修改標題</label>
                 <input type="text" id="editTopic" style="background:rgba(0,0,0,0.5)">
-                <button onclick="handleEditPollMetadata()" class="btn-success">更新議案資訊</button>
+                
+                <label>修改候選人名稱與圖片UID</label>
+                <div id="editCandidatesContainer"></div>
+                
+                <button onclick="handleEditPollMetadata()" class="btn-success" style="width:100%; margin-top:10px;">更新鏈上議案資訊</button>
             </div>
 
-            <div class="card" style="text-align:center">
-                <h4>您對此提案的「體感溫度」？</h4>
-                <div class="sentiment-bar">
-                    <div class="sentiment-btn" onclick="notify('您投下了 🔥 熱血一票！','success')">🔥 熱血</div>
-                    <div class="sentiment-btn" onclick="notify('您投下了 🤔 懷疑一票！','info')">🤔 懷疑</div>
-                    <div class="sentiment-btn" onclick="notify('您投下了 🚀 看好一票！','success')">🚀 看好</div>
-                </div>
+            <!-- QV 點數概覽 -->
+            <div id="qvUserStats" class="card" style="display:none; border:1px solid var(--warning);">
+                <h4 style="color:var(--warning); margin:0;"><i class="fa-solid fa-coins"></i> 平方投票狀態</h4>
+                <p id="remainingCreditsText" style="margin:10px 0 0 0;">剩餘治理點數：載入中...</p>
+            </div>
+
+            <!-- 排序投票 UI -->
+            <div id="rankedUI" class="card" style="display:none; border:1px solid var(--p);">
+                <h3><i class="fa-solid fa-arrows-up-down"></i> 拖曳候選人進行排序</h3>
+                <ul id="sortList"></ul>
+                <button onclick="handleCastRankedVote()" class="btn-success" style="width:100%; margin-top:20px;">確認並送出排序選票</button>
             </div>
             
             <div id="votingUI" style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;"></div>
@@ -313,7 +326,7 @@
             { "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }, { "internalType": "string", "name": "_newTopic", "type": "string" }, { "internalType": "string[]", "name": "_newNames", "type": "string[]" }, { "internalType": "string[]", "name": "_newUids", "type": "string[]" }], "name": "updatePollMetadata", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
         ];
 
-        let provider, signer, userAddr, contract, userRep = 0, userTitles = [], isRegisteredOnChain = false;
+        let provider, signer, userAddr, contract, userRep = 0, userCredits = 0, userTitles = [], isRegisteredOnChain = false;
         let chartInstance = null, currentPid = null;
 
         async function init() {
@@ -327,124 +340,36 @@
                 userAddr = await signer.getAddress();
                 contract = new ethers.Contract(CONTRACT_ADDR, ABI, signer);
                 
-                await checkRegistrationStatus();
+                await syncUserDashboard();
                 loadPersistedData();
                 updateUI();
                 renderPolls();
                 renderLeaderboard();
                 notify("Web3 連線成功 (Sepolia)", "success");
-            } catch (e) { notify("連線取消", "error"); }
+            } catch (e) { notify("連線失敗", "error"); }
         }
 
-        async function checkRegistrationStatus() {
+        async function syncUserDashboard() {
             try {
                 const dashboard = await contract.getUserDashboard(userAddr);
                 isRegisteredOnChain = dashboard.isRegistered;
+                userRep = dashboard.reputation.toNumber();
+                userCredits = dashboard.credits.toNumber();
                 document.getElementById("regAlert").style.display = isRegisteredOnChain ? "none" : "block";
-            } catch (e) { console.error("註冊狀態檢查失敗", e); }
+            } catch (e) { console.error("同步失敗", e); }
         }
 
-        // --- CID / 圖片加載邏輯 ---
         function resolveCandidateImage(uid) {
-            if (!uid) return 'https://via.placeholder.com/200?text=No+Image';
-            
-            // 判斷是否為 IPFS CID (Qm 或 bafy 開頭)
-            if (uid.startsWith('Qm') || uid.startsWith('bafy')) {
-                return `https://ipfs.io/ipfs/${uid}`;
-            }
-
-            // 對接使用者提供的本地圖片
-            const localList = ["伍佰", "周杰倫", "張惠妹", "張震嶽", "徐佳瑩", "田馥甄", "蔡依林", "蕭敬騰", "韋禮安", "魏如萱"];
-            for (let name of localList) {
-                if (uid.includes(name)) {
-                    let ext = (name === "周杰倫") ? ".png" : ".jpg";
-                    // 修正檔名中的特殊字符匹配 (張惠妹、田馥甄)
-                    let finalName = name;
-                    if (name === "張惠妹") finalName = "張惠妹（aMEI）";
-                    if (name === "田馥甄") finalName = "田馥甄（Hebe）";
-                    return `./候選人圖片/${finalName}${ext}`;
-                }
-            }
-            // 預設生成 Identicon
+            if (!uid) return 'https://via.placeholder.com/200?text=No+UID';
+            uid = uid.trim();
+            if (uid.startsWith('Qm') || uid.startsWith('bafy')) return `https://ipfs.io/ipfs/${uid}`;
+            const localMap = {
+                "伍佰": "伍佰.jpg", "周杰倫": "周杰倫.png", "張惠妹": "張惠妹（aMEI）.jpg",
+                "張震嶽": "張震嶽.jpg", "徐佳瑩": "徐佳瑩.jpg", "田馥甄": "田馥甄（Hebe）.jpg",
+                "蔡依林": "蔡依林.jpg", "蕭敬騰": "蕭敬騰.jpg", "韋禮安": "韋禮安.jpg", "魏如萱": "魏如萱.jpg"
+            };
+            for (let name in localMap) if (uid.includes(name)) return `./候選人圖片/${localMap[name]}`;
             return `https://api.dicebear.com/7.x/identicon/svg?seed=${uid}`;
-        }
-
-        // --- 徹底修復登出功能 ---
-        function disconnectWallet() {
-            // 1. 清除 JS 記憶體變數
-            userAddr = null; signer = null; contract = null;
-            isRegisteredOnChain = false;
-            
-            // 2. 更新介面顯示
-            document.getElementById("userInfo").style.display = "none";
-            document.getElementById("discoBtn").style.display = "none";
-            document.getElementById("connBtn").style.display = "block";
-            
-            // 3. 顯示引導頁並清空特定數據顯示
-            showPage('guidePage');
-            document.getElementById("pollGrid").innerHTML = "";
-            
-            notify("已安全中斷連線 (登出)", "info");
-            
-            // 可選：4. 強制重新整理以清除 Ethers 內部快取
-            setTimeout(() => { location.reload(); }, 1500);
-        }
-
-        async function handleRegisterOnChain() {
-            if(!contract) return;
-            const btn = document.getElementById("regOnChainBtn");
-            try {
-                btn.disabled = true; btn.innerHTML = '註冊中...';
-                const tx = await contract.register("新治理者", "default");
-                await tx.wait();
-                confetti();
-                notify("註冊成功！", "success");
-                await checkRegistrationStatus();
-                updateUI();
-            } catch (e) { notify("註冊失敗", "error"); } finally { btn.disabled = false; }
-        }
-
-        async function handleCreatePoll() {
-            if(!isRegisteredOnChain) return notify("請先完成註冊", "error");
-            const btn = document.getElementById("submitCreateBtn");
-            const topic = document.getElementById("topic").value;
-            const mode = document.getElementById("modeSelect").value;
-            const names = document.getElementById("names").value.split(",").map(s => s.trim());
-            const uidsInput = document.getElementById("uids").value.split(",").map(s => s.trim());
-            const duration = document.getElementById("duration").value;
-            if(!topic || names.length === 0) return notify("請完整填寫", "error");
-            const finalUids = names.map((n, i) => uidsInput[i] || generateUID());
-
-            try {
-                btn.disabled = true; btn.innerHTML = '發送交易中...';
-                const tx = await contract.createPoll(topic, mode, names, finalUids, duration);
-                await tx.wait();
-                confetti();
-                notify("提案成功！", "success");
-                renderPolls(); showPage('listPage');
-            } catch (e) { notify("交易失敗", "error"); } finally { btn.disabled = false; btn.innerHTML = '部署至區塊鏈 (Sepolia)'; }
-        }
-
-        async function renderPolls() {
-            const grid = document.getElementById("pollGrid");
-            if(!contract) return;
-            try {
-                grid.innerHTML = '<p style="text-align:center; width:100%;">載入中...</p>';
-                const count = await contract.getPollCount();
-                let html = "";
-                for(let i = count.toNumber() - 1; i >= 0; i--) {
-                    const p = await contract.allPolls(i);
-                    const modes = ["一般", "平方", "募資", "排序", "權重"];
-                    html += `
-                        <div class="card" onclick="viewDetail(${i})">
-                            <span class="cost-tag">${modes[p.mode]}模式</span>
-                            <h3>${p.topic}</h3>
-                            <p style="color:var(--muted); font-size:0.85rem;">發起人: ${p.creator.substring(0,8)}...</p>
-                            <button class="btn-ghost" style="width:100%; margin-top:20px;">進入治理</button>
-                        </div>`;
-                }
-                grid.innerHTML = html || '<p>尚無議案</p>';
-            } catch (e) { grid.innerHTML = '<p>讀取失敗</p>'; }
         }
 
         async function viewDetail(pid) {
@@ -454,70 +379,138 @@
             try {
                 const p = await contract.allPolls(pid);
                 const candidates = await contract.getCandidates(pid);
+                await syncUserDashboard();
                 document.getElementById("pollInfo").innerHTML = `<span class="cost-tag">#${pid}</span><h1>${p.topic}</h1><p>發起人：${p.creator}</p>`;
                 
-                // 10. 顯示發起人編輯權限
                 const isCreator = p.creator.toLowerCase() === userAddr.toLowerCase();
-                const noVotes = p.totalVotes.toNumber() === 0;
-                if(isCreator && noVotes) {
-                    document.getElementById("creatorEditSection").style.display = "block";
+                const canEdit = isCreator && p.totalVotes.toNumber() === 0;
+                document.getElementById("creatorEditSection").style.display = canEdit ? "block" : "none";
+                
+                if(canEdit) {
                     document.getElementById("editTopic").value = p.topic;
-                } else {
-                    document.getElementById("creatorEditSection").style.display = "none";
+                    const container = document.getElementById("editCandidatesContainer");
+                    container.innerHTML = candidates.map((c, i) => `
+                        <div class="edit-row">
+                            <input type="text" class="edit-cand-name" value="${c.name}" placeholder="名稱">
+                            <input type="text" class="edit-cand-uid" value="${c.uid}" placeholder="UID / CID">
+                        </div>`).join('');
                 }
 
-                const votingUI = document.getElementById("votingUI");
-                votingUI.innerHTML = candidates.map((c, i) => `
-                    <div class="card" style="text-align:center">
-                        <img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://via.placeholder.com/200?text=Error+Loading'">
-                        <small style="color:var(--muted)">UID: ${c.uid}</small>
-                        <h3>${c.name}</h3>
-                        <p>目前得票: ${c.voteWeight.toString()}</p>
-                        <button onclick="handleCastVote(${pid}, ${i})">投下一票</button>
-                    </div>`).join('');
-            } catch (e) { notify("詳情讀取失敗", "error"); }
+                document.getElementById("qvUserStats").style.display = (p.mode === 1) ? "block" : "none";
+                if(p.mode === 1) document.getElementById("remainingCreditsText").innerText = `當前剩餘點數：${userCredits}`;
+
+                const vUI = document.getElementById("votingUI");
+                const rUI = document.getElementById("rankedUI");
+                if (p.mode === 3) {
+                    vUI.style.display = "none"; rUI.style.display = "block";
+                    renderRankedSort(candidates);
+                } else {
+                    vUI.style.display = "grid"; rUI.style.display = "none";
+                    vUI.innerHTML = candidates.map((c, i) => `
+                        <div class="card" style="text-align:center">
+                            <img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://via.placeholder.com/200?text=Error'">
+                            <h3>${c.name}</h3>
+                            <p>得票: ${c.voteWeight.toString()}</p>
+                            ${p.mode === 1 ? `
+                                <input type="number" id="qv-input-${i}" placeholder="票數" min="1" oninput="updateQVCost(${i})">
+                                <div id="qv-cost-${i}" class="qv-info">消耗：0 點</div>
+                                <button onclick="handleCastVote(${pid}, ${i}, 1)" style="width:100%; margin-top:10px;">送出平方選票</button>
+                            ` : `<button onclick="handleCastVote(${pid}, ${i}, 0)" style="width:100%;">投下一票</button>`}
+                        </div>`).join('');
+                }
+            } catch (e) { notify("讀取失敗", "error"); }
+        }
+
+        function updateQVCost(idx) {
+            const val = document.getElementById(`qv-input-${idx}`).value || 0;
+            const cost = val * val;
+            const el = document.getElementById(`qv-cost-${idx}`);
+            el.innerText = `消耗：${cost} 點`;
+            el.style.color = cost > userCredits ? "var(--error)" : "var(--warning)";
+        }
+
+        function renderRankedSort(candidates) {
+            const list = document.getElementById("sortList");
+            list.innerHTML = candidates.map((c, i) => `<li class="sort-item" data-id="${i}"><i class="fa-solid fa-bars"></i> ${c.name}</li>`).join('');
+            if (window.rankedSort) window.rankedSort.destroy();
+            window.rankedSort = new Sortable(list, { animation: 150 });
+        }
+
+        async function handleCastVote(pid, cid, type) {
+            if(!isRegisteredOnChain) return notify("請先註冊", "error");
+            let val = (type === 1) ? document.getElementById(`qv-input-${cid}`).value : 1;
+            if (type === 1 && val * val > userCredits) return notify("點數不足", "error");
+            try {
+                notify("打包選票中...", "info");
+                const tx = await contract.castVote(pid, cid, val);
+                await tx.wait();
+                confetti(); notify("投票成功！", "success"); viewDetail(pid);
+            } catch (e) { notify("失敗", "error"); }
+        }
+
+        async function handleCastRankedVote() {
+            const first = document.querySelector("#sortList li").dataset.id;
+            handleCastVote(currentPid, first, 0);
+        }
+
+        async function handleRegisterOnChain() {
+            try {
+                const tx = await contract.register("User", "default");
+                await tx.wait(); confetti(); await syncUserDashboard(); updateUI();
+            } catch (e) { notify("註冊失敗", "error"); }
+        }
+
+        async function handleCreatePoll() {
+            if(!isRegisteredOnChain) return notify("請先註冊", "error");
+            const topic = document.getElementById("topic").value;
+            const mode = document.getElementById("modeSelect").value;
+            const names = document.getElementById("names").value.split(",").map(s => s.trim());
+            const uids = document.getElementById("uids").value.split(",").map(s => s.trim());
+            const duration = document.getElementById("duration").value;
+            if(!topic || names.length === 0) return notify("資訊不全", "error");
+            try {
+                const tx = await contract.createPoll(topic, mode, names, names.map((n, i) => uids[i] || generateUID()), duration);
+                await tx.wait(); confetti(); renderPolls(); showPage('listPage');
+            } catch (e) { notify("發起失敗", "error"); }
+        }
+
+        async function renderPolls() {
+            const grid = document.getElementById("pollGrid");
+            if(!contract) return;
+            try {
+                const count = await contract.getPollCount();
+                let html = "";
+                for(let i = count.toNumber() - 1; i >= 0; i--) {
+                    const p = await contract.allPolls(i);
+                    const modes = ["一般", "平方", "募資", "排序", "權重"];
+                    html += `<div class="card" onclick="viewDetail(${i})"><span class="cost-tag">${modes[p.mode]}</span><h3>${p.topic}</h3><button class="btn-ghost" style="width:100%; margin-top:20px;">進入治理</button></div>`;
+                }
+                grid.innerHTML = html || '<p>尚無議案</p>';
+            } catch (e) { grid.innerHTML = '<p>讀取失敗</p>'; }
         }
 
         async function handleEditPollMetadata() {
-            const newTopic = document.getElementById("editTopic").value;
-            if(!newTopic) return;
             try {
-                notify("正在修改議案...", "info");
-                const p = await contract.allPolls(currentPid);
-                const cand = await contract.getCandidates(currentPid);
-                const names = cand.map(c => c.name);
-                const uids = cand.map(c => c.uid);
-                const tx = await contract.updatePollMetadata(currentPid, newTopic, names, uids);
-                await tx.wait();
-                notify("修改成功！", "success");
-                viewDetail(currentPid);
-            } catch (e) { notify("修改失敗: 僅限無人投票前修改", "error"); }
-        }
+                notify("正在更新鏈上數據...", "info");
+                const newT = document.getElementById("editTopic").value;
+                const nameInputs = document.querySelectorAll(".edit-cand-name");
+                const uidInputs = document.querySelectorAll(".edit-cand-uid");
+                
+                const newNames = Array.from(nameInputs).map(i => i.value);
+                const newUids = Array.from(uidInputs).map(i => i.value);
 
-        async function handleCastVote(pid, cid) {
-            if(!isRegisteredOnChain) return notify("請先註冊", "error");
-            try {
-                notify("發送選票中...", "info");
-                const tx = await contract.castVote(pid, cid, 1);
-                await tx.wait();
-                confetti();
-                notify("投票成功！", "success");
-                viewDetail(pid);
-            } catch (e) { notify("投票失敗", "error"); }
+                const tx = await contract.updatePollMetadata(currentPid, newT, newNames, newUids);
+                await tx.wait(); 
+                notify("更新成功", "success"); 
+                viewDetail(currentPid);
+            } catch (e) { notify("修改失敗: " + (e.reason || "交易取消"), "error"); }
         }
 
         function loadPersistedData() {
-            const r = localStorage.getItem(`rep_${userAddr}`);
             const t = localStorage.getItem(`titles_${userAddr}`);
-            userRep = r ? parseInt(r) : 0;
             userTitles = t ? JSON.parse(t) : [];
         }
-
-        function savePersistedData() {
-            if(!userAddr) return;
-            localStorage.setItem(`rep_${userAddr}`, userRep);
-            localStorage.setItem(`titles_${userAddr}`, JSON.stringify(userTitles));
-        }
+        function savePersistedData() { if(userAddr) localStorage.setItem(`titles_${userAddr}`, JSON.stringify(userTitles)); }
 
         function updateUI() {
             if (!userAddr) return;
@@ -529,44 +522,33 @@
             document.getElementById("profileAvatar").src = `https://api.dicebear.com/7.x/identicon/svg?seed=${userAddr}`;
             document.getElementById("navRep").innerText = "Rep: " + userRep;
 
-            let lvl = "🌱 治理萌芽"; let next = 50; let fill = (userRep / 50) * 100;
-            if (userRep > 50) { lvl = "🛡️ 治理執法者"; next = 150; fill = ((userRep - 50) / 100) * 100; }
-            if (userRep > 150) { lvl = "⚖️ 中堅仲裁官"; next = 300; fill = ((userRep - 150) / 150) * 100; }
-            if (userRep > 300) { lvl = "👑 治理傳奇"; next = 500; fill = ((userRep - 300) / 200) * 100; }
+            let lvl = "🌱 治理萌芽"; let fill = (userRep / 50) * 100;
+            if (userRep > 50) { lvl = "🛡️ 治理執法者"; fill = ((userRep - 50) / 100) * 100; }
+            if (userRep > 150) { lvl = "👑 治理傳奇"; fill = ((userRep - 150) / 350) * 100; }
 
             document.getElementById("lvlTitle").innerText = "等級：" + lvl;
             document.getElementById("lvlFill").style.width = Math.min(fill, 100) + "%";
-            document.getElementById("repStatus").innerText = `Rep: ${userRep} / ${next}`;
+            document.getElementById("repStatus").innerText = `Rep: ${userRep}`;
 
             const wall = document.getElementById("titleCollection");
             if (userTitles.length > 0) wall.innerHTML = userTitles.map(t => `<span class="title-badge">${t}</span>`).join('');
             savePersistedData();
         }
 
-        function handleDailyCheckIn() {
-            userRep += 10; notify("簽到成功！Rep +10", "success"); updateUI(); confetti({ particleCount: 100 });
-        }
-
+        function handleDailyCheckIn() { userRep += 10; notify("簽到成功！", "success"); updateUI(); confetti(); }
         function spinWheel() {
             const deg = 1800 + Math.random() * 1800;
             document.getElementById("wheel").style.transform = `rotate(${deg}deg)`;
-            const results = [{t: "稱號：治理小博士", v: "治理小博士"}, {t: "稱號：正義之盾", v: "正義之盾"}, {t: "稱號：共識大師", v: "共識大師"}];
-            notify("抽取運勢中...", "info");
+            const results = [{t:"稱號：治理小博士",v:"治理小博士"},{t:"稱號：正義之盾",v:"正義之盾"}];
             setTimeout(() => {
                 const res = results[Math.floor(Math.random() * results.length)];
                 document.getElementById("wheelResult").innerText = res.t;
-                if (res.v && !userTitles.includes(res.v)) { userTitles.push(res.v); updateUI(); }
+                if(res.v && !userTitles.includes(res.v)) { userTitles.push(res.v); updateUI(); }
                 confetti();
             }, 4000);
         }
 
-        function generateUID() { return 'CAND-' + Math.random().toString(36).substr(2, 5).toUpperCase() + '-' + Date.now().toString().slice(-4); }
-        function toggleModeFields() {
-            const m = document.getElementById("modeSelect").value;
-            document.getElementById("setup-qv").style.display = m == "1" ? 'block' : 'none';
-            document.getElementById("setup-qf").style.display = m == "2" ? 'block' : 'none';
-        }
-
+        function disconnectWallet() { userAddr = null; location.reload(); }
         function showPage(id) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -584,17 +566,14 @@
         function initChart() {
             const ctx = document.getElementById('mainChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, { 
-                type: 'line', 
-                data: { labels: ['1月', '2月', '3月'], datasets: [{ label: '鏈上總票數', data: [120, 310, 450], borderColor: '#6366f1', tension: 0.4 }] } 
-            });
-            document.getElementById("log").innerHTML = `> [${new Date().toLocaleTimeString()}] 正在監聽鏈上活動...`;
+            chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['1月', '2月', '3月'], datasets: [{ label: '全網票數', data: [120, 310, 450], borderColor: '#6366f1' }] } });
         }
 
-        function renderLeaderboard() {
-            const list = document.getElementById("leaderboardList");
-            const data = [{ a: "0x71...2B", r: 550 }, { a: "0x88...F1", r: 420 }, { a: "0x32...A9", r: 310 }];
-            list.innerHTML = data.map((p, i) => `<div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid var(--border)"><span>${i + 1}. ${p.a}</span><b>${p.r} Rep</b></div>`).join('');
+        function generateUID() { return 'CAND-' + Math.random().toString(36).substr(2, 5).toUpperCase(); }
+        function toggleModeFields() {
+            const m = document.getElementById("modeSelect").value;
+            document.getElementById("setup-qv").style.display = m == "1" ? 'block' : 'none';
+            document.getElementById("setup-qf").style.display = m == "2" ? 'block' : 'none';
         }
 
         function filterPolls() {
@@ -604,8 +583,7 @@
             });
         }
 
-        function saveProfile() { notify("身分更新已記錄", "success"); }
-
+        function saveProfile() { notify("資料更新成功", "success"); }
         window.onload = () => { if (window.ethereum) init(); };
     </script>
 </body>
