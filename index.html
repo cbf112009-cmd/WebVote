@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
-    <!-- Firebase SDK (僅供基礎數據快取) -->
+    <!-- Firebase SDK (數據緩存與同步) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -89,6 +89,10 @@
         .wheel-wrap { position: relative; width: 320px; height: 320px; margin: 0 auto; }
         #wheel { width: 100%; height: 100%; border-radius: 50%; border: 10px solid #1e293b; background: conic-gradient(#6366f1 0deg 72deg, #ec4899 72deg 144deg, #06b6d4 144deg 216deg, #f1c40f 216deg 288deg, #10b981 288deg 360deg); transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
         .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid var(--error); z-index: 10; }
+
+        .sentiment-bar { display: flex; gap: 15px; justify-content: center; margin: 20px 0; }
+        .sentiment-btn { background: var(--glass); border: 1px solid var(--border); padding: 10px 20px; border-radius: 50px; cursor: pointer; color: var(--text); }
+        .sentiment-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
     </style>
 </head>
 
@@ -127,7 +131,7 @@
                 <p style="color:var(--muted); font-size:1.2rem;">整合身分主權、多維計票與激勵系統。所有數據皆實時鏈上同步。</p>
                 <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; margin-top:40px;">
                     <div class="card"><h3>鏈上權威</h3><p>註冊後的聲譽 (Rep) 是全網公認的信任指標，不因設備更換遺失。</p></div>
-                    <div class="card"><h3>五大共識</h3><p>一般、平方、排序等多元計票模型，有效對抗治理壟斷。</p></div>
+                    <div class="card"><h3>五大共識</h3><p>內建一般、平方、排序等多元計票模型，有效對抗治理壟斷。</p></div>
                     <div class="card"><h3>榮譽持久化</h3><p>治理不僅是投票，透過稱號、等級與轉盤，建立您的去中心化履歷。</p></div>
                 </div>
                 <button style="margin:40px auto; padding:18px 50px;" onclick="showPage('listPage')">開啟共識之旅</button>
@@ -245,7 +249,8 @@
             </div>
 
             <div id="creatorEditSection" class="card" style="display:none; border:2px solid var(--warning);">
-                <h3 style="color:var(--warning);">發起人編輯面板</h3>
+                <h3 style="color:var(--warning);">發起人編輯面板 (0 票鎖定)</h3>
+                <label>修改標題</label>
                 <input type="text" id="editTopic">
                 <div style="display:flex; gap:10px; margin-top:15px;">
                     <button onclick="handleEditPollMetadata()" class="btn-success" style="flex:2;">同步鏈上</button>
@@ -344,7 +349,7 @@
                 contract.on("PollCreated", () => { renderPolls(); });
                 contract.on("VoteCast", () => { if(currentPid) viewDetail(currentPid); });
 
-                window.notify("錢包連線成功 (鏈上權威)", "success");
+                window.notify("連線成功 (鏈上權威)", "success");
             } catch (e) { console.error(e); }
         }
 
@@ -387,7 +392,7 @@
             document.getElementById("lvlFill").style.width = Math.min(fill, 100) + "%";
             
             const tc = document.getElementById("titleCollection"); 
-            if(tc) tc.innerHTML = userTitles.map(t => `<span class="title-badge" style="background:var(--p); color:white; padding:5px 10px; border-radius:50px; font-size:0.8rem;">${t}</span>`).join('') || '<small>尚未獲取號</small>';
+            if(tc) tc.innerHTML = userTitles.map(t => `<span class="title-badge" style="background:var(--p); color:white; padding:5px 10px; border-radius:50px; font-size:0.8rem; margin:2px;">${t}</span>`).join('') || '<small>尚未獲取號</small>';
         }
 
         // --- 平方投票強化 ---
@@ -417,8 +422,13 @@
                 
                 document.getElementById("pollInfo").innerHTML = `<h1>${p.topic}</h1><span class="title-badge" style="background:var(--p); color:white; padding:4px 12px; border-radius:50px;">${modes[p.mode]}模式</span><p>發起位址: ${p.creator}</p>`;
                 document.getElementById("oracleGuess").innerHTML = candidates.map((c, i) => `<option value="${i}">${c.name}</option>`).join('');
-                document.getElementById("creatorEditSection").style.display = (p.creator.toLowerCase() === userAddr.toLowerCase() && p.totalVotes.toNumber() === 0) ? "block" : "none";
                 
+                // 發起人控制面板
+                const isCreator = p.creator.toLowerCase() === userAddr.toLowerCase();
+                const canEdit = p.totalVotes.toNumber() === 0;
+                document.getElementById("creatorEditSection").style.display = (isCreator && canEdit) ? "block" : "none";
+                if (isCreator && canEdit) document.getElementById("editTopic").value = p.topic;
+
                 document.getElementById("qvCreditsUI").style.display = (p.mode === 1) ? "flex" : "none";
                 document.getElementById("userCreditsDisplay").innerText = userCredits;
                 document.getElementById("qvCostPreview").innerText = "預計消耗：0 點";
@@ -427,7 +437,7 @@
                     <div class="card" style="text-align:center">
                         <div class="cand-img-wrap"><img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed=Err'"></div>
                         <h3>${c.name}</h3><p>累積票權: ${c.voteWeight.toString()}</p>
-                        ${p.mode === 1 ? `<input type="number" id="qv-${i}" class="qv-vote-input" placeholder="欲投數量" min="1" oninput="updateQVCost()" style="margin-bottom:10px;">` : ''}
+                        ${p.mode === 1 ? `<input type="number" id="qv-${i}" class="qv-vote-input" placeholder="欲投數量" min="1" oninput="updateQVCost()" style="margin-bottom:10px; width:80px; text-align:center;">` : ''}
                         <button class="vote-submit-btn" onclick="govVote(${pid}, ${i}, ${p.mode === 1})">${p.mode === 1 ? '執行 QV 投票' : '投下一票'}</button>
                     </div>`).join('');
             } catch (e) { window.notify("議題資訊載入失敗", "error"); }
@@ -436,7 +446,7 @@
 
         window.govVote = async function(pid, cid, isQV) {
             const val = isQV ? document.getElementById(`qv-${cid}`).value : 1;
-            if(!val || val <= 0) return window.notify("請輸入票數", "warning");
+            if(!val || val <= 0) return window.notify("請輸入有效票數", "warning");
             const overlay = document.getElementById("mainLoader");
             try { 
                 overlay.style.display = "flex";
@@ -449,7 +459,53 @@
             finally { overlay.style.display = "none"; }
         };
 
-        // --- 審計圖表與基礎功能 ---
+        // --- 修復：實作鏈上編輯與刪除 ---
+        window.handleEditPollMetadata = async function() {
+            const newTopic = document.getElementById("editTopic").value;
+            const overlay = document.getElementById("mainLoader");
+            try {
+                overlay.style.display = "flex";
+                window.notify("同步修改至鏈上...", "info");
+                const tx = await contract.updatePollMetadata(currentPid, newTopic, [], []);
+                await tx.wait();
+                window.notify("修改成功！", "success");
+                viewDetail(currentPid);
+            } catch (e) { window.notify("修改失敗，僅發起人且 0 票時可改", "error"); }
+            finally { overlay.style.display = "none"; }
+        };
+
+        window.handleDeletePoll = async function() {
+            if(!confirm("確定要刪除此提案嗎？這將在鏈上標記標題為 [DELETED]")) return;
+            const overlay = document.getElementById("mainLoader");
+            try {
+                overlay.style.display = "flex";
+                window.notify("執行鏈上標記刪除...", "info");
+                // 獲取目前標題並加上刪除標籤
+                const p = await contract.allPolls(currentPid);
+                const tx = await contract.updatePollMetadata(currentPid, "[DELETED] " + p.topic, [], []);
+                await tx.wait();
+                window.notify("提案已標記刪除", "success");
+                renderPolls();
+                window.showPage('listPage');
+            } catch (e) { window.notify("刪除失敗", "error"); }
+            finally { overlay.style.display = "none"; }
+        };
+
+        // --- 修復：實作預言機預測 ---
+        window.handleOracleBet = function() {
+            const guessIdx = document.getElementById("oracleGuess").value;
+            const guessName = document.getElementById("oracleGuess").options[guessIdx].text;
+            window.notify(`預言提交成功：您預測 [${guessName}] 會勝出！`, "success");
+            // 模擬存入本地成就
+            if(!userTitles.includes("預言家初階")) {
+                userTitles.push("預言家初階");
+                updateUI();
+                savePersistedData();
+            }
+            confetti();
+        };
+
+        // --- 趨勢圖與基礎功能 ---
         async function updateAuditTrend() {
             if(!chartInstance || !contract) return;
             const log = document.getElementById("log");
@@ -463,14 +519,14 @@
                 const total = vE.length + pE.length;
                 chartInstance.data.datasets[0].data = [total * 0.4, total * 0.7, total];
                 chartInstance.update();
-                log.innerText = `> 鏈上數據同步完成 (區塊範圍: ${startBlock} - ${currentBlock})`;
-            } catch(e) { log.innerText = "> 系統狀態：節點忙碌，數據讀取不完全"; }
+                log.innerText = `> 鏈上活動審計完成 (最近 5,000 區塊累計事件)`;
+            } catch(e) { log.innerText = "> 系統狀態：節點忙碌，數據抓取不完全"; }
         }
 
         function initChartFrame() {
             const ctx = document.getElementById('mainChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['日前','昨日','今日'], datasets: [{ label: '全鏈治理活躍事件', data: [0, 0, 0], borderColor: '#6366f1', fill: true, tension: 0.4 }] }, options: { plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#94a3b8' } }, x: { ticks: { color: '#94a3b8' } } } } });
+            chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['日前','昨日','今日'], datasets: [{ label: '全鏈治理活躍趨勢', data: [0, 0, 0], borderColor: '#6366f1', fill: true, tension: 0.4 }] }, options: { plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#94a3b8' } }, x: { ticks: { color: '#94a3b8' } } } } });
         }
 
         window.connectWalletFlow = async function() {
@@ -494,7 +550,7 @@
         };
         window.addCandidateInput = function() {
             const div = document.createElement("div"); div.style.display = "flex"; div.style.gap = "10px"; div.style.marginTop = "8px";
-            div.innerHTML = `<input type="text" class="cand-name" placeholder="名稱" style="flex:1;"><input type="text" class="cand-uid" placeholder="CID" style="flex:2;">`;
+            div.innerHTML = `<input type="text" class="cand-name" placeholder="名稱" style="flex:1; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:8px; padding:8px; color:white;"><input type="text" class="cand-uid" placeholder="CID" style="flex:2; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:8px; padding:8px; color:white;">`;
             document.getElementById("candidateInputsContainer").appendChild(div);
         };
         window.disconnectWallet = function() { sessionStorage.setItem('explicitLogout', 'true'); location.reload(); };
@@ -527,16 +583,13 @@
                     if (p.topic.startsWith("[DELETED]")) continue;
                     html += `<div class="card" style="cursor:pointer" onclick="viewDetail(${i})"><h3>${p.topic}</h3><p>累計票數：${p.totalVotes.toString()}</p><button class="btn-ghost" style="width:100%; margin-top:10px;">點擊詳情 / 投票</button></div>`;
                 }
-                grid.innerHTML = html || '<p>尚無發布中的議案</p>';
+                grid.innerHTML = html || '<p>目前尚無發布中的議案</p>';
             } catch (e) {}
         }
 
         function loadPersistedData() { if(!userAddr) return; const k = userAddr.toLowerCase(); userTitles = JSON.parse(localStorage.getItem(`titles_${k}`) || "[]"); localRepBonus = parseInt(localStorage.getItem(`bonus_${k}`) || "0"); }
         function savePersistedData() { if(!userAddr) return; const k = userAddr.toLowerCase(); localStorage.setItem(`titles_${k}`, JSON.stringify(userTitles)); localStorage.setItem(`bonus_${k}`, localRepBonus.toString()); }
 
-        window.handleOracleBet = () => window.notify("預言提交成功", "success");
-        window.handleEditPollMetadata = () => window.notify("鏈上處理中...", "info");
-        window.handleDeletePoll = () => window.notify("執行鏈上標記刪除...", "info");
         window.filterPolls = () => {
             const q = document.getElementById("searchBar").value.toLowerCase();
             document.querySelectorAll('#pollGrid .card').forEach(c => { c.style.display = c.innerText.toLowerCase().includes(q) ? 'block' : 'none'; });
