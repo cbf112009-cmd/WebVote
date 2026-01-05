@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
-    <!-- Firebase SDK (僅供基礎數據快取與同步) -->
+    <!-- Firebase SDK (僅供基礎數據同步，不當權威) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -62,7 +62,7 @@
 
         .card { background: var(--glass); border: 1px solid var(--border); border-radius: 24px; padding: 30px; margin-bottom: 20px; position: relative; overflow: hidden; }
 
-        /* 視覺元件 */
+        /* 議題標籤 */
         .status-tag { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; }
         .status-active { background: rgba(16, 185, 129, 0.2); color: var(--success); }
         .status-closed { background: rgba(148, 163, 184, 0.2); color: var(--muted); }
@@ -71,8 +71,8 @@
         .cand-img { width: 100%; height: 100%; object-fit: cover; }
 
         .lvl-container { margin: 25px 0; text-align: left; background: rgba(255,255,255,0.02); padding: 20px; border-radius: 15px; }
-        .lvl-bar { width: 100%; height: 14px; background: rgba(0, 0, 0, 0.4); border-radius: 20px; overflow: hidden; border: 1px solid var(--border); margin-top: 10px; }
-        .lvl-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #10b981, #f1c40f); width: 0%; transition: 2s ease; }
+        .lvl-bar { width: 100%; height: 14px; background: rgba(0, 0, 0, 0.4); border-radius: 20px; border: 1px solid var(--border); margin-top: 10px; overflow: hidden; }
+        .lvl-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #10b981, #f1c40f); width: 0%; transition: 1.5s cubic-bezier(0.1, 0, 0.1, 1); }
 
         button { background: var(--p); color: white; border: none; padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 8px; justify-content: center; }
         button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3); }
@@ -81,7 +81,7 @@
         .btn-danger { background: var(--error); }
 
         #toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: #1e293b; border-left: 4px solid var(--p); color: white; padding: 15px 25px; border-radius: 8px; animation: slideIn 0.3s ease; }
+        .toast { background: #1e293b; border-left: 4px solid var(--p); color: white; padding: 15px 25px; border-radius: 8px; animation: slideIn 0.3s ease; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
 
         #log { background: #000; color: #10b981; font-family: monospace; padding: 20px; border-radius: 15px; height: 160px; overflow-y: auto; font-size: 13px; border: 1px solid var(--border); line-height: 1.6; }
 
@@ -132,15 +132,15 @@
 
     <div class="container">
 
-        <!-- 1. 引導頁面 (Onboarding) -->
+        <!-- 1. 引導頁面 (Onboarding 1-2-3) -->
         <div id="guidePage" class="page active">
             <div class="card" style="text-align:center; padding:80px 40px;">
                 <h1>UniGov 治理生態中樞</h1>
                 <p style="color:var(--muted); font-size:1.2rem;">整合身分主權、多維計票與激勵系統。數據實時鏈上同步。</p>
                 <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:30px; margin-top:40px; text-align:left;">
                     <div class="card"><b style="color:var(--p); font-size:1.5rem;">01</b><h3>建立身分</h3><p>連接錢包並執行鏈上註冊，將位址轉化為具備聲譽 (Rep) 的治理身分。</p></div>
-                    <div class="card"><b style="color:var(--p); font-size:1.5rem;">02</b><h3>參與共識</h3><p>大廳提供一般、平方、排序等五大模式，精準應對各類組織決策場景。</p></div>
-                    <div class="card"><b style="color:var(--p); font-size:1.5rem;">03</b><h3>累積榮譽</h3><p>透過投票與簽到獲得 Rep，建立您的去中心化治理資歷牆。</p></div>
+                    <div class="card"><b style="color:var(--p); font-size:1.5rem;">02</b><h3>參與共識</h3><p>大廳提供一般、平方、排序等五大模式，精準對應各類組織決策場景。</p></div>
+                    <div class="card"><b style="color:var(--p); font-size:1.5rem;">03</b><h3>累積榮譽</h3><p>透過投票與簽到獲得積分，建立您的去中心化治理資歷與等級牆。</p></div>
                 </div>
                 <button style="margin:40px auto; padding:18px 50px;" onclick="showPage('listPage')">立即開啟共識之旅</button>
             </div>
@@ -149,7 +149,7 @@
         <!-- 2. 大廳頁面 (搜尋、狀態分類) -->
         <div id="listPage" class="page">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-                <h1>治理議案中心</h1>
+                <h1>治理議案列表</h1>
                 <input type="text" id="searchBar" onkeyup="filterPolls()" placeholder="搜尋關鍵字或發起地址..." style="width:300px; padding:12px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:10px; color:white;">
             </div>
             <div id="pollGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap:24px;"></div>
@@ -177,15 +177,15 @@
         <div id="modeInfoPage" class="page">
             <h1>治理模式百科全書</h1>
             <div style="display:grid; gap:20px;">
-                <div class="card"><h3>一般模式</h3><p>一人一票，最純粹的基準民主。$Votes = count(Users)$。</p></div>
-                <div class="card"><h3>平方投票 (QV)</h3><p>成本隨票數平方增長。$Cost = Votes^2$。有效防止大戶壟斷。</p></div>
-                <div class="card"><h3>平方募資 (QF)</h3><p>基於參與人數優化資金分配。常用於公共財資助。</p></div>
-                <div class="card"><h3>偏好排序</h3><p>自動轉移選票，選出大眾接受度最高的公約數。</p></div>
-                <div class="card"><h3>權重投票</h3><p>依據 Rep 或持倉比例決定治理權限。</p></div>
+                <div class="card"><h3>一般模式 (Standard)</h3><p>一人一票，最純粹的基準民主。$Votes = count(Users)$。</p></div>
+                <div class="card"><h3>平方投票 (Quadratic)</h3><p>成本隨票數平方增長。$Cost = Votes^2$。有效保護少數發言強度。</p></div>
+                <div class="card"><h3>平方募資 (QF)</h3><p>重視人數而非金額，優化預算分配。$Match \propto (\sum \sqrt{contribution})^2$。</p></div>
+                <div class="card"><h3>偏好排序</h3><p>選出群體接受度最高的公約數選項。</p></div>
+                <div class="card"><h3>權重投票</h3><p>依據 Rep 或特定 ERC-20 代幣持倉比例決定治理權。</p></div>
             </div>
         </div>
 
-        <!-- 6. 個人面板 (簽到與等級) -->
+        <!-- 6. 個人面板 (大一統 Rep) -->
         <div id="profilePage" class="page">
             <div class="card" style="max-width:650px; margin:0 auto; text-align:center">
                 <h2>治理者儀表板</h2>
@@ -198,25 +198,25 @@
                 <div class="lvl-container">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                         <b id="lvlTitle" style="color:var(--warning)">載入中...</b>
-                        <span id="repStatus">鏈上 Rep：0</span>
+                        <span id="repStatus">治理聲望：0</span>
                     </div>
                     <div class="lvl-bar"><div id="lvlFill" class="lvl-fill"></div></div>
-                    <p style="font-size:0.75rem; color:var(--muted); margin-top:10px;">總積分 = 鏈上 Rep + 本地任務加成 (+<span id="bonusValue">0</span>)</p>
+                    <p style="font-size:0.75rem; color:var(--muted); margin-top:10px;">總積分 = 鏈上數據 + 本地簽到 (+<span id="bonusValue">0</span>)</p>
                 </div>
 
                 <div class="task-list">
                     <div class="task-item" style="background:rgba(255,255,255,0.05); padding:15px; border-radius:15px; border:1px solid var(--border); display:flex; align-items:center; gap:15px;">
-                        <div style="flex:1; text-align:left;"><b>每日治理簽到</b><br><small>領取本地聲望激勵 (+10)</small></div>
+                        <div style="flex:1; text-align:left;"><b>每日治理簽到</b><br><small>領取本地積分激勵 (+10 Rep)</small></div>
                         <button onclick="handleDailyCheckIn()" id="checkInBtn" class="btn-success">簽到</button>
                     </div>
                 </div>
 
                 <div style="margin-top:20px; border:1px dashed var(--border); padding:20px; border-radius:20px;">
-                    <h4>榮譽成就收藏室</h4>
+                    <h4>榮譽稱號牆</h4>
                     <div id="titleCollection" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px;"></div>
                 </div>
 
-                <button class="btn-danger" style="width:100%; margin-top:25px;" onclick="disconnectWallet()">中斷連接</button>
+                <button class="btn-danger" style="width:100%; margin-top:25px;" onclick="disconnectWallet()">斷開連接</button>
             </div>
         </div>
 
@@ -239,17 +239,17 @@
             </div>
         </div>
 
-        <!-- 8. 詳情頁面 (匯出報告、QV 強化、預言機、編輯鎖) -->
+        <!-- 8. 詳情頁面 (匯出、QV/排序強化) -->
         <div id="detailPage" class="page">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <button class="btn-ghost" onclick="showPage('listPage')"><i class="fa-solid fa-arrow-left"></i> 返回列表</button>
-                <button class="btn-ghost" onclick="handleExportPoll()"><i class="fa-solid fa-file-export"></i> 匯出計票 CSV</button>
+                <button class="btn-ghost" onclick="handleExportPoll()"><i class="fa-solid fa-file-export"></i> 匯出計票報告</button>
             </div>
             <div id="pollInfo" class="card" style="border-left: 8px solid var(--p);"></div>
             
             <div id="qvCreditsUI" class="qv-info-badge" style="display:none;">
                 <span>治理點數餘額：<b id="userCreditsDisplay" style="color:var(--warning)">0</b></span>
-                <span id="qvCostPreview" style="font-weight:800; color:var(--warning);">預算消耗：0 點</span>
+                <span id="qvCostPreview" style="font-weight:800; color:var(--warning);">預計消耗預算：0 點</span>
             </div>
 
             <div id="oracleSection" class="card" style="border: 2px solid var(--p);">
@@ -271,9 +271,9 @@
 
             <div class="card" style="text-align:center">
                 <div class="sentiment-bar">
-                    <div class="sentiment-btn" onclick="notify('熱血！','success')">🔥</div>
-                    <div class="sentiment-btn" onclick="notify('觀望。','info')">🤔</div>
-                    <div class="sentiment-btn" onclick="notify('看好！','success')">🚀</div>
+                    <div class="sentiment-btn" onclick="notify('已反應：熱血！','success')">🔥</div>
+                    <div class="sentiment-btn" onclick="notify('已反應：觀望。','info')">🤔</div>
+                    <div class="sentiment-btn" onclick="notify('已反應：看好！','success')">🚀</div>
                 </div>
             </div>
             <div id="votingUIContainer"></div>
@@ -284,27 +284,11 @@
     <div id="toast-container"></div>
 
     <script type="module">
-        const CONTRACT_ADDR = "0xc438c3f6131030Ac5e7070FFFe7434559a9cdd3b"; 
-        const DEPLOY_BLOCK = 7000000;
-        const ABI = [
-            { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "user", "type": "address" }, { "indexed": false, "internalType": "string", "name": "name", "type": "string" }], "name": "UserRegistered", "type": "event" },
-            { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint256", "name": "pollId", "type": "uint256" }, { "indexed": false, "internalType": "address", "name": "creator", "type": "address" }], "name": "PollCreated", "type": "event" },
-            { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint256", "name": "pollId", "type": "uint256" }, { "indexed": false, "internalType": "address", "name": "voter", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "candidateId", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "weight", "type": "uint256" }], "name": "VoteCast", "type": "event" },
-            { "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }, { "internalType": "uint256", "name": "_cid", "type": "uint256" }, { "internalType": "uint256", "name": "_val", "type": "uint256" }], "name": "castVote", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-            { "inputs": [{ "internalType": "string", "name": "_t", "type": "string" }, { "internalType": "enum UniGov.VotingMode", "name": "_m", "type": "uint8" }, { "internalType": "string[]", "name": "_n", "type": "string[]" }, { "internalType": "string[]", "name": "_u", "type": "string[]" }, { "internalType": "uint256", "name": "_d", "type": "uint256" }], "name": "createPoll", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-            { "inputs": [], "name": "getPollCount", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-            { "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "name": "allPolls", "outputs": [{ "internalType": "uint256", "name": "id", "type": "uint256" }, { "internalType": "address", "name": "creator", "type": "address" }, { "internalType": "string", "name": "topic", "type": "string" }, { "internalType": "enum UniGov.VotingMode", "name": "mode", "type": "uint8" }, { "internalType": "uint256", "name": "endTime", "type": "uint256" }, { "internalType": "bool", "name": "isActive", "type": "bool" }, { "internalType": "uint256", "name": "totalVotes", "type": "uint256" }], "stateMutability": "view", "type": "function" },
-            { "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }], "name": "getCandidates", "outputs": [{ "components": [{ "internalType": "string", "name": "name", "type": "string" }, { "internalType": "string", "name": "uid", "type": "string" }, { "internalType": "uint256", "name": "voteWeight", "type": "uint256" }], "internalType": "struct UniGov.Candidate[]", "name": "", "type": "tuple[]" }], "stateMutability": "view", "type": "function" },
-            { "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }], "name": "getUserDashboard", "outputs": [{ "internalType": "string", "name": "name", "type": "string" }, { "internalType": "uint256", "name": "reputation", "type": "uint256" }, { "internalType": "uint256", "name": "credits", "type": "uint256" }, { "internalType": "bool", "name": "isRegistered", "type": "bool" }], "stateMutability": "view", "type": "function" },
-            { "inputs": [{ "internalType": "string", "name": "_name", "type": "string" }, { "internalType": "string", "name": "_avatar", "type": "string" }], "name": "register", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-            { "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }, { "internalType": "string", "name": "_newTopic", "type": "string" }, { "internalType": "string[]", "name": "_newNames", "type": "string[]" }, { "internalType": "string[]", "name": "_newUids", "type": "string[]" }], "name": "updatePollMetadata", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
-        ];
-
         let provider, signer, userAddr, contract, onChainRep = 0, userCredits = 0, userTitles = [], isRegisteredOnChain = false;
         let localRepBonus = 0, chartInstance = null, currentPid = null;
 
-        // --- 全域修復：掛載互動函數 ---
-        window.notify = function(m, t) {
+        // --- 全域互動掛載 ---
+        window.notify = (m, t) => {
             const c = document.getElementById("toast-container");
             const div = document.createElement("div");
             div.className = "toast";
@@ -314,7 +298,7 @@
             setTimeout(() => div.remove(), 4000);
         };
 
-        window.showPage = function(id) {
+        window.showPage = (id) => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             if (id === 'statPage') { initChartFrame(); updateAuditTrend(); }
@@ -322,8 +306,8 @@
         };
 
         async function fetchWithTimeout(promise, timeout = 5000) {
-            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('RPC 超時')), timeout));
-            return Promise.race([promise, timeoutPromise]);
+            const tPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('RPC 超時')), timeout));
+            return Promise.race([promise, tPromise]);
         }
 
         async function init() {
@@ -349,7 +333,19 @@
                 if (network.chainId !== 11155111) await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: "0xaa36a7" }] });
                 signer = provider.getSigner();
                 userAddr = addr;
-                contract = new ethers.Contract(CONTRACT_ADDR, ABI, signer);
+                contract = new ethers.Contract(CONTRACT_ADDR, [
+                    { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "user", "type": "address" }, { "indexed": false, "internalType": "string", "name": "name", "type": "string" }], "name": "UserRegistered", "type": "event" },
+                    { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint256", "name": "pollId", "type": "uint256" }, { "indexed": false, "internalType": "address", "name": "creator", "type": "address" }], "name": "PollCreated", "type": "event" },
+                    { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint256", "name": "pollId", "type": "uint256" }, { "indexed": false, "internalType": "address", "name": "voter", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "candidateId", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "weight", "type": "uint256" }], "name": "VoteCast", "type": "event" },
+                    { "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }, { "internalType": "uint256", "name": "_cid", "type": "uint256" }, { "internalType": "uint256", "name": "_val", "type": "uint256" }], "name": "castVote", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+                    { "inputs": [{ "internalType": "string", "name": "_t", "type": "string" }, { "internalType": "uint8", "name": "_m", "type": "uint8" }, { "internalType": "string[]", "name": "_n", "type": "string[]" }, { "internalType": "string[]", "name": "_u", "type": "string[]" }, { "internalType": "uint256", "name": "_d", "type": "uint256" }], "name": "createPoll", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+                    { "inputs": [], "name": "getPollCount", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+                    { "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "name": "allPolls", "outputs": [{ "internalType": "uint256", "name": "id", "type": "uint256" }, { "internalType": "address", "name": "creator", "type": "address" }, { "internalType": "string", "name": "topic", "type": "string" }, { "internalType": "uint8", "name": "mode", "type": "uint8" }, { "internalType": "uint256", "name": "endTime", "type": "uint256" }, { "internalType": "bool", "name": "isActive", "type": "bool" }, { "internalType": "uint256", "name": "totalVotes", "type": "uint256" }], "stateMutability": "view", "type": "function" },
+                    { "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }], "name": "getCandidates", "outputs": [{ "components": [{ "internalType": "string", "name": "name", "type": "string" }, { "internalType": "string", "name": "uid", "type": "string" }, { "internalType": "uint256", "name": "voteWeight", "type": "uint256" }], "internalType": "struct UniGov.Candidate[]", "name": "", "type": "tuple[]" }], "stateMutability": "view", "type": "function" },
+                    { "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }], "name": "getUserDashboard", "outputs": [{ "internalType": "string", "name": "name", "type": "string" }, { "internalType": "uint256", "name": "reputation", "type": "uint256" }, { "internalType": "uint256", "name": "credits", "type": "uint256" }, { "internalType": "bool", "name": "isRegistered", "type": "bool" }], "stateMutability": "view", "type": "function" },
+                    { "inputs": [{ "internalType": "string", "name": "_name", "type": "string" }, { "internalType": "string", "name": "_avatar", "type": "string" }], "name": "register", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+                    { "inputs": [{ "internalType": "uint256", "name": "_pid", "type": "uint256" }, { "internalType": "string", "name": "_newTopic", "type": "string" }, { "internalType": "string[]", "name": "_newNames", "type": "string[]" }, { "internalType": "string[]", "name": "_newUids", "type": "string[]" }], "name": "updatePollMetadata", "outputs": [], "stateMutability": "nonpayable", "type": "function" }
+                ], signer);
 
                 loadPersistedData();
                 await syncUserDashboard();
@@ -358,7 +354,7 @@
                 contract.on("PollCreated", () => { renderPolls(); updateAuditTrend(); });
                 contract.on("VoteCast", () => { if(currentPid !== null) viewDetail(currentPid); updateAuditTrend(); });
 
-                window.notify("連線成功 (鏈上數據優先)", "success");
+                window.notify("錢包連線成功", "success");
             } catch (e) { console.error(e); }
         }
 
@@ -380,45 +376,48 @@
             } catch (e) { console.error(e); }
         }
 
+        // --- 核心修復：大一統聲望體系 ---
         function updateUI() {
             if (!userAddr) return;
-            document.getElementById("navRep").innerText = "Rep: " + onChainRep;
+            const totalRep = onChainRep + localRepBonus;
+            
+            document.getElementById("navRep").innerText = "Rep: " + totalRep;
             document.getElementById("navName").innerText = userAddr.substring(0, 6) + "...";
             document.getElementById("navAvatar").src = `https://api.dicebear.com/7.x/identicon/svg?seed=${userAddr}`;
             
-            const totalScore = onChainRep + localRepBonus;
-            document.getElementById("repStatus").innerText = `鏈上聲望: ${onChainRep}`;
+            document.getElementById("repStatus").innerText = `治理聲望: ${totalRep}`;
             document.getElementById("bonusValue").innerText = localRepBonus;
             document.getElementById("profileAvatar").src = `https://api.dicebear.com/7.x/identicon/svg?seed=${userAddr}`;
             
-            let lvl = "🌱 治理萌芽"; let fill = (totalScore / 50) * 100;
-            if (totalScore > 50) { lvl = "🛡️ 治理執法者"; fill = ((totalScore - 50) / 100) * 100; }
-            if (totalScore > 150) { lvl = "👑 治理傳奇"; fill = ((totalScore - 150) / 350) * 100; }
+            let lvl = "🌱 治理萌芽"; let fill = (totalRep / 50) * 100;
+            if (totalRep > 50) { lvl = "🛡️ 治理執法者"; fill = ((totalRep - 50) / 100) * 100; }
+            if (totalRep > 150) { lvl = "👑 治理傳奇"; fill = ((totalRep - 150) / 350) * 100; }
             document.getElementById("lvlTitle").innerText = "等級狀態：" + lvl;
             document.getElementById("lvlFill").style.width = Math.min(fill, 100) + "%";
             
-            const tc = document.getElementById("titleCollection"); if(tc) tc.innerHTML = userTitles.map(t => `<span class="title-badge" style="background:var(--p); color:white; padding:5px 10px; border-radius:50px; font-size:0.8rem; margin:2px;">${t}</span>`).join('') || '<small>尚未獲取榮譽號</small>';
+            const tc = document.getElementById("titleCollection"); 
+            if(tc) tc.innerHTML = userTitles.map(t => `<span class="title-badge" style="background:var(--p); color:white; padding:5px 12px; border-radius:50px; font-size:0.8rem; margin:2px;">${t}</span>`).join('') || '<small>尚無榮譽號</small>';
         }
 
-        // --- 核心恢復：匯出功能 ---
+        // --- 匯出引擎 ---
         window.handleExportPoll = async function() {
             if(currentPid === null) return;
             try {
                 const candidates = await contract.getCandidates(currentPid);
-                let csv = "選項名稱,UID,累積票權\n";
+                let csv = "選項名稱,UID,累積票數\n";
                 candidates.forEach(c => { csv += `${c.name},${c.uid},${c.voteWeight.toString()}\n`; });
                 const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
                 const link = document.createElement("a");
                 link.href = URL.createObjectURL(blob);
-                link.download = `UniGov_Poll_${currentPid}_Report.csv`;
+                link.download = `UniGov_Report_Poll_${currentPid}.csv`;
                 link.click();
-                window.notify("計票報告匯出成功", "success");
+                window.notify("計票報告匯出完成", "success");
             } catch (e) { window.notify("匯出失敗", "error"); }
         };
 
         window.handleExportAudit = function() {
-            const log = document.getElementById("log").innerText;
-            const csv = "審計時間,審計日誌內容\n" + new Date().toLocaleString() + "," + log.replace(/>/g, "").trim();
+            const logText = document.getElementById("log").innerText;
+            const csv = "時間,審計日誌\n" + new Date().toLocaleString() + "," + logText.replace(/>/g, "").trim();
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
@@ -427,7 +426,7 @@
             window.notify("審計日誌匯出完成", "success");
         };
 
-        // --- 多模式議題載入與投票 ---
+        // --- 多模式議題互動 ---
         async function viewDetail(pid) {
             currentPid = pid; window.showPage('detailPage');
             const container = document.getElementById("votingUIContainer");
@@ -436,24 +435,38 @@
             try {
                 const p = await fetchWithTimeout(contract.allPolls(pid));
                 const candidates = await fetchWithTimeout(contract.getCandidates(pid));
-                const modes = ["一般", "平方", "募資", "排序", "權重"];
+                const modes = ["一般", "平方 (QV)", "募資 (QF)", "排序", "權重"];
                 
                 const isExp = p.endTime.toNumber() < Math.floor(Date.now() / 1000);
-                document.getElementById("pollInfo").innerHTML = `<h1>${p.topic}</h1><span class="status-tag ${isExp ? 'status-closed' : 'status-active'}">${isExp ? '已截止' : '進行中'}</span><p>發起人: ${p.creator}</p>`;
+                document.getElementById("pollInfo").innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h1>${p.topic}</h1>
+                        <span class="status-tag ${isExp ? 'status-closed' : 'status-active'}">${isExp ? '已截止' : '進行中'}</span>
+                    </div>
+                    <span class="title-badge" style="background:var(--p); color:white; padding:4px 12px; border-radius:50px;">${modes[p.mode]}模式</span>`;
+                
                 document.getElementById("oracleGuess").innerHTML = candidates.map((c, i) => `<option value="${i}">${c.name}</option>`).join('');
-                document.getElementById("creatorEditSection").style.display = (p.creator.toLowerCase() === userAddr.toLowerCase() && p.totalVotes.toNumber() === 0) ? "block" : "none";
-                if(p.creator.toLowerCase() === userAddr.toLowerCase()) document.getElementById("editTopic").value = p.topic;
+                
+                const isCreator = p.creator.toLowerCase() === userAddr.toLowerCase();
+                const canEdit = p.totalVotes.toNumber() === 0;
+                document.getElementById("creatorEditSection").style.display = (isCreator && canEdit) ? "block" : "none";
+                if(isCreator && canEdit) document.getElementById("editTopic").value = p.topic;
 
                 document.getElementById("qvCreditsUI").style.display = (p.mode === 1) ? "flex" : "none";
                 document.getElementById("userCreditsDisplay").innerText = userCredits;
+                document.getElementById("qvCostPreview").innerText = "預算消耗：0 點";
 
                 if (p.mode === 3) {
                     container.innerHTML = `<div class="card"><h3>請拖動排定優先級 (第一位為最優選)</h3><div id="rankedSortList" style="margin:20px 0;">${candidates.map((c, i) => `<div class="ranked-item" data-id="${i}"><div class="rank-number">${i+1}</div><div class="cand-img-wrap" style="width:40px; height:40px; margin:0;"><img src="${resolveCandidateImage(c.uid)}" class="cand-img"></div><div style="flex:1"><b>${c.name}</b></div><i class="fa-solid fa-bars" style="color:var(--muted)"></i></div>`).join('')}</div><button class="btn-success" style="width:100%; height:55px;" onclick="govVote(${pid}, -1, false, true)">提交排序首選</button></div>`;
                     new Sortable(document.getElementById("rankedSortList"), { animation: 150, onEnd: () => { document.querySelectorAll('.rank-number').forEach((el, idx) => el.innerText = idx + 1); }});
                 } else {
-                    container.innerHTML = `<div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">${candidates.map((c, i) => `<div class="card" style="text-align:center"><div class="cand-img-wrap"><img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed=E'"></div><h3>${c.name}</h3><p>累積: ${c.voteWeight.toString()} 票</p>${p.mode === 1 ? `<input type="number" id="qv-${i}" class="qv-vote-input" placeholder="票數" min="1" oninput="updateQVCost()" style="width:70px; margin-bottom:10px; text-align:center; background:#000; border:1px solid var(--border); color:white; border-radius:5px;">` : ''}<button class="vote-submit-btn" onclick="govVote(${pid}, ${i}, ${p.mode === 1})">${p.mode === 1 ? '執行 QV 投票' : '投下一票'}</button></div>`).join('')}</div>`;
+                    container.innerHTML = `
+                        ${p.mode === 2 ? `<div class="card" style="border:1px solid var(--success); background:rgba(16,185,129,0.05); margin-bottom:20px; font-size:0.85rem;"><i class="fa-solid fa-calculator"></i> QF 試算：系統將依投入金額平方根加總後的平方進行配對金估算。</div>` : ''}
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                            ${candidates.map((c, i) => `<div class="card" style="text-align:center"><div class="cand-img-wrap"><img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed=E'"></div><h3>${c.name}</h3><p>累積: ${c.voteWeight.toString()} 票</p>${p.mode === 1 ? `<input type="number" id="qv-${i}" class="qv-vote-input" placeholder="數量" min="1" oninput="updateQVCost()" style="width:70px; margin-bottom:10px; text-align:center; background:#000; border:1px solid var(--border); color:white; border-radius:5px;">` : ''}<button class="vote-submit-btn" onclick="govVote(${pid}, ${i}, ${p.mode === 1})">${p.mode === 1 ? '執行 QV 投票' : '投下一票'}</button></div>`).join('')}
+                        </div>`;
                 }
-            } catch (e) { container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--error);">議題載入失敗，請重試</p>`; }
+            } catch (e) { container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--error);">數據載入失敗，請重試</p>`; }
         }
         window.viewDetail = viewDetail;
 
@@ -473,26 +486,30 @@
 
             const overlay = document.getElementById("mainLoader");
             try { 
-                overlay.style.display = "flex"; window.notify("正在傳送交易...", "info");
+                overlay.style.display = "flex"; window.notify("交易發送中...", "info");
                 const tx = await contract.castVote(pid, finalCid, val); 
                 await tx.wait(); confetti(); syncUserDashboard(); viewDetail(pid);
-            } catch (e) { window.notify("失敗", "error"); } finally { overlay.style.display = "none"; }
+            } catch (e) { window.notify("交易失敗，請檢查權限", "error"); } finally { overlay.style.display = "none"; }
         };
 
+        // --- 修復：簽到加成大一統 ---
         window.handleDailyCheckIn = function() {
-            localRepBonus += 10; updateUI(); savePersistedData(); 
-            window.notify("簽到成功！本地積分 +10", "success"); confetti();
+            localRepBonus += 10; 
+            updateUI(); 
+            savePersistedData(); 
+            window.notify("簽到成功！聲望 +10", "success"); 
+            confetti();
         };
 
         window.handleEditPollMetadata = async function() {
             const overlay = document.getElementById("mainLoader");
-            try { overlay.style.display = "flex"; const tx = await contract.updatePollMetadata(currentPid, document.getElementById("editTopic").value, [], []); await tx.wait(); window.notify("修改成功", "success"); viewDetail(currentPid); } catch (e) { window.notify("失敗", "error"); } finally { overlay.style.display = "none"; }
+            try { overlay.style.display = "flex"; const tx = await contract.updatePollMetadata(currentPid, document.getElementById("editTopic").value, [], []); await tx.wait(); window.notify("標題修改成功", "success"); viewDetail(currentPid); } catch (e) { window.notify("失敗", "error"); } finally { overlay.style.display = "none"; }
         };
 
         window.handleDeletePoll = async function() {
-            if(!confirm("標記刪除？")) return;
+            if(!confirm("確定標記刪除？")) return;
             const overlay = document.getElementById("mainLoader");
-            try { overlay.style.display = "flex"; const p = await contract.allPolls(currentPid); const tx = await contract.updatePollMetadata(currentPid, "[DELETED] " + p.topic, [], []); await tx.wait(); window.notify("已刪除", "success"); renderPolls(); window.showPage('listPage'); } catch (e) { window.notify("失敗", "error"); } finally { overlay.style.display = "none"; }
+            try { overlay.style.display = "flex"; const p = await contract.allPolls(currentPid); const tx = await contract.updatePollMetadata(currentPid, "[DELETED] " + p.topic, [], []); await tx.wait(); window.notify("已標記刪除", "success"); renderPolls(); window.showPage('listPage'); } catch (e) { window.notify("失敗", "error"); } finally { overlay.style.display = "none"; }
         };
 
         window.handleOracleBet = () => { window.notify("預言提交成功", "success"); confetti(); };
@@ -500,22 +517,25 @@
         window.connectWalletFlow = async function() {
             try { sessionStorage.removeItem('explicitLogout'); const accs = await provider.send("eth_requestAccounts", []); if(accs.length > 0) await setupSession(accs[0]); } catch (e) { window.notify("取消連線", "error"); }
         };
+        
         window.handleRegisterOnChain = async function() {
             const overlay = document.getElementById("mainLoader");
             try { overlay.style.display = "flex"; const tx = await contract.register("User", "default"); await tx.wait(); await syncUserDashboard(); confetti(); } catch (e) { window.notify("註冊失敗", "error"); } finally { overlay.style.display = "none"; }
         };
+        
         window.handleCreatePoll = async function() {
-            if(!isRegisteredOnChain) return window.notify("請先註冊", "error");
+            if(!isRegisteredOnChain) return window.notify("請先註冊身分", "error");
             const overlay = document.getElementById("mainLoader");
+            const names = Array.from(document.querySelectorAll(".cand-name")).map(i => i.value || "匿名選項");
+            // UID 自動補全
+            const uids = Array.from(document.querySelectorAll(".cand-uid")).map(i => i.value || "CAND-" + Math.random().toString(36).substring(2, 6).toUpperCase());
             try { 
                 overlay.style.display = "flex";
-                const topic = document.getElementById("topic").value;
-                const names = Array.from(document.querySelectorAll(".cand-name")).map(i => i.value || "選項");
-                const uids = Array.from(document.querySelectorAll(".cand-uid")).map(i => i.value || "CAND-" + Math.random().toString(36).substring(2, 6).toUpperCase());
-                const tx = await contract.createPoll(topic, document.getElementById("modeSelect").value, names, uids, 1440); 
+                const tx = await contract.createPoll(document.getElementById("topic").value, document.getElementById("modeSelect").value, names, uids, 1440); 
                 await tx.wait(); renderPolls(); window.showPage('listPage');
-            } catch(e) { window.notify("失敗", "error"); } finally { overlay.style.display = "none"; }
+            } catch(e) { window.notify("部署失敗", "error"); } finally { overlay.style.display = "none"; }
         };
+
         window.addCandidateInput = function() {
             const div = document.createElement("div"); div.style.display = "flex"; div.style.gap = "10px"; div.style.marginTop = "8px";
             div.innerHTML = `<input type="text" class="cand-name" placeholder="名稱" style="flex:1; background:#000; color:white; border:1px solid var(--border); border-radius:5px; padding:5px;"><input type="text" class="cand-uid" placeholder="CID (自動補全)" style="flex:2; background:#000; color:white; border:1px solid var(--border); border-radius:5px; padding:5px;">`;
@@ -560,7 +580,7 @@
                     const p = await fetchWithTimeout(contract.allPolls(i));
                     if (p.topic.startsWith("[DELETED]")) continue;
                     const isExp = p.endTime.toNumber() < Math.floor(Date.now() / 1000);
-                    html += `<div class="card" onclick="viewDetail(${i})" style="cursor:pointer; border-top: 5px solid ${isExp ? 'var(--muted)' : 'var(--p)'};"><div style="display:flex; justify-content:space-between;"><h3>${p.topic}</h3><span class="status-tag ${isExp ? 'status-closed' : 'status-active'}">${isExp ? '已截止' : '進行中'}</span></div><p style="color:var(--muted); font-size:0.85rem; margin-top:10px;">累計票數：${p.totalVotes.toString()}</p><button class="btn-ghost" style="width:100%; margin-top:15px;">進入議題 / 投票</button></div>`;
+                    html += `<div class="card" onclick="viewDetail(${i})" style="cursor:pointer; border-top: 5px solid ${isExp ? 'var(--muted)' : 'var(--p)'};"><div style="display:flex; justify-content:space-between;"><h3>${p.topic}</h3><span class="status-tag ${isExp ? 'status-closed' : 'status-active'}">${isExp ? '已截止' : '進行中'}</span></div><p style="color:var(--muted); font-size:0.85rem; margin-top:10px;">累計票數：${p.totalVotes.toString()}</p><button class="btn-ghost" style="width:100%; margin-top:15px;">進入議題詳情</button></div>`;
                 }
                 grid.innerHTML = html || '<p>尚無發布議案</p>';
             } catch (e) {}
