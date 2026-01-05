@@ -14,11 +14,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK (地址發現與計算快取) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
@@ -26,7 +26,7 @@
         const db = getFirestore(app);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'unigov-v1';
 
-        window.govDB = { db, auth, collection, doc, setDoc, getDocs, appId, signInAnonymously };
+        window.govDB = { db, auth, collection, doc, setDoc, getDocs, onSnapshot, appId, signInAnonymously };
     </script>
 
     <style>
@@ -78,24 +78,37 @@
         button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3); }
         button:disabled { background: var(--muted); cursor: not-allowed; opacity: 0.6; }
         .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--error); }
 
         #toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; }
         .toast { background: #1e293b; border-left: 4px solid var(--p); color: white; padding: 15px 25px; border-radius: 8px; animation: slideIn 0.3s ease; }
 
         #log { background: #000; color: #10b981; font-family: monospace; padding: 20px; border-radius: 15px; height: 160px; overflow-y: auto; font-size: 13px; border: 1px solid var(--border); line-height: 1.6; }
 
-        .qv-info-badge { background: rgba(241, 196, 15, 0.1); border: 1px solid var(--warning); padding: 15px; border-radius: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .leader-item { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid var(--border); }
+        .leader-rank { width: 30px; font-weight: 800; color: var(--p); }
+        .leader-addr { flex: 1; font-family: monospace; font-size: 0.8rem; margin-left: 10px; color: var(--success); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .leader-rep { color: var(--warning); font-weight: bold; }
+        .me-tag { background: var(--p); color: white; font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
+
+        .scanning-bar { padding: 15px; background: rgba(99, 102, 241, 0.1); border-radius: 15px; font-size: 0.85rem; margin-bottom: 15px; text-align: center; border: 1px dashed var(--p); color: var(--text); cursor: pointer; }
+        .sentiment-bar { display: flex; gap: 15px; justify-content: center; margin: 20px 0; }
+        .sentiment-btn { background: var(--glass); border: 1px solid var(--border); padding: 10px 20px; border-radius: 50px; cursor: pointer; color: var(--text); }
         
         .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 15, 26, 0.8); z-index: 3000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .loader { width: 48px; height: 48px; border: 5px solid #FFF; border-bottom-color: var(--p); border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
         @keyframes rotation { 0% { transform: rotate(0deg) } 100% { transform: rotate(360deg) } }
 
+        .wheel-wrap { position: relative; width: 320px; height: 320px; margin: 40px auto; }
+        #wheel { width: 100%; height: 100%; border-radius: 50%; border: 10px solid #1e293b; background: conic-gradient(#6366f1 0deg 72deg, #ec4899 72deg 144deg, #06b6d4 144deg 216deg, #f1c40f 216deg 288deg, #10b981 288deg 360deg); transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); box-shadow: 0 0 50px rgba(99, 102, 241, 0.3); }
+        .wheel-pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid var(--error); z-index: 10; }
+
         .ranked-item { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 10px; cursor: grab; display: flex; align-items: center; gap: 15px; }
         .rank-number { width: 30px; height: 30px; border-radius: 50%; background: var(--p); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; }
         
-        .wheel-wrap { position: relative; width: 300px; height: 300px; margin: 0 auto; }
-        #wheel { width: 100%; height: 100%; border-radius: 50%; border: 10px solid #1e293b; background: conic-gradient(#6366f1 0deg 72deg, #ec4899 72deg 144deg, #06b6d4 144deg 216deg, #f1c40f 216deg 288deg, #10b981 288deg 360deg); transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
-        .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid var(--error); z-index: 10; }
+        .qv-info-badge { background: rgba(241, 196, 15, 0.1); border: 1px solid var(--warning); padding: 15px; border-radius: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .cost-preview { color: var(--warning); font-weight: 800; font-size: 1.2rem; }
     </style>
 </head>
 
@@ -110,7 +123,7 @@
             <button class="btn-ghost" onclick="showPage('guidePage')">引導</button>
             <button class="btn-ghost" onclick="showPage('listPage')">大廳</button>
             <button class="btn-ghost" onclick="showPage('modeInfoPage')">百科</button>
-            <button class="btn-ghost" onclick="showPage('statPage')">趨勢審計</button>
+            <button class="btn-ghost" onclick="showPage('statPage')">審計/排行</button>
             <button class="btn-ghost" onclick="showPage('wheelPage')">轉盤</button>
         </div>
         <div id="userSection" style="margin-left:auto; display:flex; align-items:center; gap:15px;">
@@ -130,8 +143,8 @@
         <!-- 1. 引導頁面 (Onboarding 1-2-3) -->
         <div id="guidePage" class="page active">
             <div class="card" style="text-align:center; padding:80px 40px;">
-                <h1>UniGov 治理生態中樞</h1>
-                <p style="color:var(--muted); font-size:1.2rem;">整合身分主權、多維計票與激勵系統。數據實時鏈上同步。</p>
+                <h1>UniGov 治理生態大廳</h1>
+                <p style="color:var(--muted); font-size:1.2rem;">整合多維共識、行為激勵與榮譽養成。數據實時鏈上同步。</p>
                 <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:30px; margin-top:40px; text-align:left;">
                     <div class="card">
                         <b style="color:var(--p); font-size:1.5rem;">01</b>
@@ -141,37 +154,46 @@
                     <div class="card">
                         <b style="color:var(--p); font-size:1.5rem;">02</b>
                         <h3>參與共識</h3>
-                        <p>在大廳選擇議案。支援一般、平方、排序等五大模式，精準對抗大戶壟斷。</p>
+                        <p>大廳支援一般、平方、排序等五大模式，精準對抗大戶壟斷。</p>
                     </div>
                     <div class="card">
                         <b style="color:var(--p); font-size:1.5rem;">03</b>
                         <h3>累積榮譽</h3>
-                        <p>透過投票與簽到獲得 Rep，提升等級並在成就牆收藏稀有治理稱號。</p>
+                        <p>透過投票與簽到獲得 Rep，在全網領袖排行榜展示您的權威聲望。</p>
                     </div>
                 </div>
-                <button style="margin:40px auto; padding:18px 50px;" onclick="showPage('listPage')">立即開啟共識之旅</button>
+                <button style="margin:40px auto; padding:18px 50px;" onclick="showPage('listPage')">開啟共識之旅</button>
             </div>
         </div>
 
-        <!-- 2. 大廳頁面 (狀態分類與全域搜尋) -->
+        <!-- 2. 大廳頁面 (分類、搜尋) -->
         <div id="listPage" class="page">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-                <h1>治理議案中心</h1>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="searchBar" onkeyup="filterPolls()" placeholder="搜尋關鍵字或發起地址..." style="width:300px; padding:12px; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:10px; color:white;">
-                </div>
+                <h1>治理議案列表</h1>
+                <input type="text" id="searchBar" onkeyup="filterPolls()" placeholder="搜尋關鍵字或發起地址..." style="width:300px; background:rgba(0,0,0,0.3); border:1px solid var(--border); color:white; border-radius:10px; padding:10px;">
             </div>
             <div id="pollGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap:24px;"></div>
         </div>
 
-        <!-- 3. 審計看板 (Chart.js) -->
+        <!-- 3. 數據看板 (排行、審計、匯出) -->
         <div id="statPage" class="page">
-            <h1>治理趨勢審計 (鏈上實時事件)</h1>
-            <div class="card" style="min-height: 350px;">
-                <canvas id="mainChart" height="150"></canvas>
+            <div style="display:grid; grid-template-columns: 1.6fr 1fr; gap:30px;">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h1>治理趨勢審計 (鏈上實時事件)</h1>
+                        <button class="btn-ghost" onclick="handleExportAudit()"><i class="fa-solid fa-download"></i> 匯出全網審計 CSV</button>
+                    </div>
+                    <div class="card"><canvas id="mainChart" height="200"></canvas></div>
+                    <div id="log">> 系統狀態：正在監聽鏈上最新活動事件...</div>
+                </div>
+                <div>
+                    <h1>領袖排行 <small style="font-size:0.65rem; color:var(--muted)">(鏈上真實 Rep)</small></h1>
+                    <div id="leaderboardList" class="card" style="padding:0; min-height: 400px; display:flex; flex-direction:column;">
+                        <div id="leaderScanStatus" class="scanning-bar" onclick="renderLeaderboard()"><i class="fa-solid fa-satellite-dish fa-spin"></i> 同步全鏈真實數據中... (點擊刷新)</div>
+                        <div id="leaderContent"></div>
+                    </div>
+                </div>
             </div>
-            <div id="log">> 系統狀態：正在監聽鏈上實時活動事件...</div>
-            <button class="btn-ghost" style="margin-top:20px;" onclick="updateAuditTrend()">立即刷新趨勢數據</button>
         </div>
 
         <!-- 4. 幸運轉盤 -->
@@ -182,19 +204,19 @@
             <h2 id="wheelResult" style="color:var(--warning); min-height:40px;"></h2>
         </div>
 
-        <!-- 5. 百科頁面 (五大模式數學公式) -->
+        <!-- 5. 百科頁面 (不刪減內容) -->
         <div id="modeInfoPage" class="page">
             <h1>治理模式百科全書</h1>
             <div style="display:grid; gap:20px;">
-                <div class="card"><h3>一般模式 (Standard)</h3><p>一人一票，最純粹的民主基準。$Votes = count(Users)$。</p></div>
-                <div class="card"><h3>平方投票 (Quadratic)</h3><p>成本隨票數平方增長。$Cost = Votes^2$。有效保護少數派發言強度。</p></div>
-                <div class="card"><h3>平方募資 (QF)</h3><p>重視人數而非金額。$Match \propto (\sum \sqrt{contribution})^2$。優化公共資源撥款。</p></div>
-                <div class="card"><h3>偏好排序 (Ranked Choice)</h3><p>自動轉移票權直到產生絕對多數。消除棄保效應，選出最大公約數。</p></div>
-                <div class="card"><h3>權重投票 (Weighted)</h3><p>依據 Rep 或特定 ERC-20 代幣持倉比例決定治理權限。</p></div>
+                <div class="card"><h3>一般模式 (Standard)</h3><p>一人一票，最純粹的基準民主。$Votes = count(Users)$。</p></div>
+                <div class="card"><h3>平方投票 (Quadratic)</h3><p>成本隨票數平方增長。$Cost = Votes^2$。保護少數發言強度。</p></div>
+                <div class="card"><h3>平方募資 (QF)</h3><p>重視人數而非金額，優化預算分配。$Match \propto (\sum \sqrt{c})^2$。</p></div>
+                <div class="card"><h3>偏好排序</h3><p>選出群體接受度最高的公約數選項。</p></div>
+                <div class="card"><h3>權重投票</h3><p>依據 Rep 或特定代幣持倉比例決定治理權。</p></div>
             </div>
         </div>
 
-        <!-- 6. 個人面板 (Dashboard) -->
+        <!-- 6. 個人面板 (Dashboard & 簽到) -->
         <div id="profilePage" class="page">
             <div class="card" style="max-width:650px; margin:0 auto; text-align:center">
                 <h2>治理者儀表板</h2>
@@ -210,18 +232,18 @@
                         <span id="repStatus">鏈上 Rep：0</span>
                     </div>
                     <div class="lvl-bar"><div id="lvlFill" class="lvl-fill"></div></div>
-                    <p style="font-size:0.75rem; color:var(--muted); margin-top:10px;">包含鏈上 Rep 與本地任務加成 (+<span id="bonusValue">0</span>)</p>
+                    <p style="font-size:0.75rem; color:var(--muted); margin-top:10px;">總積分 = 鏈上 Rep + 本地任務加成 (+<span id="bonusValue">0</span>)</p>
                 </div>
 
                 <div class="task-list">
                     <div class="task-item" style="background:rgba(255,255,255,0.05); padding:15px; border-radius:15px; border:1px solid var(--border); display:flex; align-items:center; gap:15px;">
                         <div style="flex:1; text-align:left;"><b>每日治理簽到</b><br><small>領取本地聲望激勵 (+10)</small></div>
-                        <button onclick="handleDailyCheckIn()" class="btn-success">簽到</button>
+                        <button onclick="handleDailyCheckIn()" id="checkInBtn" class="btn-success">執行簽到</button>
                     </div>
                 </div>
 
                 <div style="margin-top:20px; border:1px dashed var(--border); padding:20px; border-radius:20px;">
-                    <h4>榮譽稱號成就室</h4>
+                    <h4>榮譽稱號牆</h4>
                     <div id="titleCollection" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:10px;"></div>
                 </div>
 
@@ -229,66 +251,52 @@
             </div>
         </div>
 
-        <!-- 7. 發起提案頁面 (UID 自動補全 & 動態表單) -->
+        <!-- 7. 發起提案頁面 (UID 自動補全) -->
         <div id="createPage" class="page">
             <div class="card" style="max-width:800px; margin:0 auto">
                 <h2>部署新治理議案</h2>
                 <label style="display:block; margin-top:15px; color:var(--muted);">議案標題</label>
-                <input type="text" id="topic" placeholder="例：誰是 2026 年度最佳社區項目？" style="width:100%; padding:12px; margin-top:8px; background:#000; border:1px solid var(--border); border-radius:8px; color:white;">
-                
-                <label style="display:block; margin-top:15px; color:var(--muted);">投票模式</label>
-                <select id="modeSelect" onchange="updateModeTips()" style="width:100%; padding:12px; margin-top:8px; background:#000; border:1px solid var(--border); border-radius:8px; color:white;">
+                <input type="text" id="topic" placeholder="例：誰是 2026 年度最佳社區項目？" style="width:100%; padding:10px; margin-top:5px; background:#000; border:1px solid var(--border); border-radius:8px; color:white;">
+                <select id="modeSelect" style="margin-top:15px; width:100%; padding:10px; background:#000; border:1px solid var(--border); color:white; border-radius:8px;">
                     <option value="0">一般模式 (Standard)</option>
                     <option value="1">平方投票 (Quadratic)</option>
                     <option value="2">平方募資 (QF Matching)</option>
                     <option value="3">偏好排序 (Ranked Choice)</option>
                     <option value="4">權重投票 (Weighted Voting)</option>
                 </select>
-                <div id="modeTip" style="font-size:0.8rem; color:var(--p); margin-top:8px; padding-left:5px;"></div>
-
-                <div id="candidateInputsContainer" style="margin-top:20px;">
-                    <h4 style="margin-bottom:10px;">候選人設定</h4>
-                </div>
-                <button class="btn-ghost" onclick="addCandidateInput()" style="width:100%; margin-top:10px;">新增候選人選項</button>
-                
-                <button id="submitCreateBtn" onclick="handleCreatePoll()" style="width:100%; margin-top:30px; height:60px; font-size:1.1rem;">部署至鏈上 (Sepolia)</button>
+                <div id="candidateInputsContainer" style="margin-top:15px;"></div>
+                <button class="btn-ghost" onclick="addCandidateInput()" style="width:100%; margin-top:10px;">新增候選人</button>
+                <button id="submitCreateBtn" onclick="handleCreatePoll()" style="width:100%; margin-top:30px; height:60px;">部署至 Sepolia</button>
             </div>
         </div>
 
-        <!-- 8. 詳情頁面 (QV/QF 強化、編輯鎖、預言機) -->
+        <!-- 8. 詳情頁面 (匯出報告、QV 強化) -->
         <div id="detailPage" class="page">
-            <button class="btn-ghost" onclick="showPage('listPage')" style="margin-bottom: 20px;"><i class="fa-solid fa-arrow-left"></i> 返回列表</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <button class="btn-ghost" onclick="showPage('listPage')"><i class="fa-solid fa-arrow-left"></i> 返回列表</button>
+                <button class="btn-ghost" onclick="handleExportPoll()"><i class="fa-solid fa-file-export"></i> 匯出計票 CSV</button>
+            </div>
             <div id="pollInfo" class="card" style="border-left: 8px solid var(--p);"></div>
             
             <div id="qvCreditsUI" class="qv-info-badge" style="display:none;">
-                <span>可用治理點數：<b id="userCreditsDisplay" style="color:var(--warning)">0</b></span>
+                <span>治理點數餘額：<b id="userCreditsDisplay" style="color:var(--warning)">0</b></span>
                 <span id="qvCostPreview" style="font-weight:800; color:var(--warning);">預算消耗：0 點</span>
             </div>
 
             <div id="oracleSection" class="card" style="border: 2px solid var(--p);">
                 <h3>治理預言機 (Oracle)</h3>
-                <p>預測哪位候選人將勝出？預測成功將獲得聲望加成。</p>
                 <div style="display:flex; gap:10px; margin-top:15px;">
-                    <select id="oracleGuess" style="flex:2; padding:10px; background:#000; border:1px solid var(--border); color:white; border-radius:8px;"></select>
+                    <select id="oracleGuess" style="flex:2; padding:10px; background:#000; color:white; border-radius:8px;"></select>
                     <button onclick="handleOracleBet()" class="btn-success" style="flex:1;">提交預測</button>
                 </div>
             </div>
 
             <div id="creatorEditSection" class="card" style="display:none; border:2px solid var(--warning);">
                 <h3 style="color:var(--warning);">發起人編輯面板</h3>
-                <label style="color:var(--muted);">修改標題</label>
-                <input type="text" id="editTopic" style="width:100%; padding:10px; background:#000; border:1px solid var(--border); color:white; border-radius:8px; margin-top:5px;">
+                <input type="text" id="editTopic" style="width:100%; padding:10px; background:#000; color:white; border-radius:8px;">
                 <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button onclick="handleEditPollMetadata()" class="btn-success" style="flex:2;">同步修改至鏈上</button>
+                    <button onclick="handleEditPollMetadata()" class="btn-success" style="flex:2;">同步修改</button>
                     <button onclick="handleDeletePoll()" class="btn-danger" style="flex:1;">標記刪除</button>
-                </div>
-            </div>
-
-            <div class="card" style="text-align:center">
-                <div class="sentiment-bar">
-                    <div class="sentiment-btn" onclick="notify('已標記熱血！','success')">🔥</div>
-                    <div class="sentiment-btn" onclick="notify('已標記觀望。','info')">🤔</div>
-                    <div class="sentiment-btn" onclick="notify('已標記看好！','success')">🚀</div>
                 </div>
             </div>
 
@@ -319,8 +327,8 @@
         let provider, signer, userAddr, contract, onChainRep = 0, userCredits = 0, userTitles = [], isRegisteredOnChain = false;
         let localRepBonus = 0, chartInstance = null, currentPid = null;
 
-        // --- 全域工具與作用域修正 ---
-        window.notify = function(m, t) {
+        // --- 全域修復：掛載互動函數 ---
+        window.notify = (m, t) => {
             const c = document.getElementById("toast-container");
             const div = document.createElement("div");
             div.className = "toast";
@@ -330,16 +338,16 @@
             setTimeout(() => div.remove(), 4000);
         };
 
-        window.showPage = function(id) {
+        window.showPage = (id) => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            if (id === 'statPage') { initChartFrame(); updateAuditTrend(); }
+            if (id === 'statPage') { initChartFrame(); renderLeaderboard(); updateAuditTrend(); }
             window.scrollTo(0, 0);
         };
 
         async function fetchWithTimeout(promise, timeout = 5000) {
-            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('RPC 超時')), timeout));
-            return Promise.race([promise, timeoutPromise]);
+            const tPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('RPC 超時')), timeout));
+            return Promise.race([promise, tPromise]);
         }
 
         async function init() {
@@ -350,7 +358,6 @@
 
             if (sessionStorage.getItem('explicitLogout') === 'true') {
                 document.getElementById("connBtn").style.display = "block";
-                document.getElementById("netStatus").innerText = "尚未連線";
                 return;
             }
             try {
@@ -375,7 +382,7 @@
                 contract.on("PollCreated", () => { renderPolls(); });
                 contract.on("VoteCast", () => { if(currentPid !== null) viewDetail(currentPid); });
 
-                window.notify("錢包連線成功", "success");
+                window.notify("連線成功", "success");
             } catch (e) { console.error(e); }
         }
 
@@ -394,7 +401,12 @@
                 document.getElementById("connBtn").style.display = "none";
                 document.getElementById("discoBtn").style.display = "block";
                 updateUI();
-            } catch (e) { console.error(e); }
+                
+                if(isRegisteredOnChain) {
+                    const { db, appId, doc, setDoc } = window.govDB;
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'discovery_pool', userAddr.toLowerCase()), { address: userAddr.toLowerCase(), lastSeen: Date.now() }, { merge: true });
+                }
+            } catch (e) { console.error("Sync fail:", e); }
         }
 
         function updateUI() {
@@ -415,178 +427,187 @@
             document.getElementById("lvlFill").style.width = Math.min(fill, 100) + "%";
             
             const tc = document.getElementById("titleCollection"); 
-            if(tc) tc.innerHTML = userTitles.map(t => `<span class="title-badge" style="background:var(--p); color:white; padding:5px 12px; border-radius:50px; font-size:0.8rem; margin:2px;">${t}</span>`).join('') || '<small>尚未獲取號</small>';
+            if(tc) tc.innerHTML = userTitles.map(t => `<span class="title-badge" style="background:var(--p); color:white; padding:5px 10px; border-radius:50px; font-size:0.8rem; margin:2px;">${t}</span>`).join('') || '<small>尚無榮譽號</small>';
         }
 
-        // --- 發起端自動化 (Creator Suite) ---
-        window.updateModeTips = function() {
-            const mode = document.getElementById("modeSelect").value;
-            const tips = ["一人一票基礎模式", "成本隨票數平方增長 (1票=1點, 2票=4點)", "基於貢獻人數優化配對獎金", "拖曳排序您的優先級選項", "權限取決於您的 Rep 權重"];
-            document.getElementById("modeTip").innerText = "模式說明：" + tips[mode];
+        // --- 核心恢復：排行榜 (獨立容錯與超時) ---
+        async function renderLeaderboard() {
+            const list = document.getElementById("leaderContent");
+            const scanStatus = document.getElementById("leaderScanStatus");
+            const { db, appId, collection, getDocs, auth } = window.govDB;
+            if (!contract || !list || !auth.currentUser) return;
+
+            try {
+                scanStatus.style.display = 'block';
+                const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'discovery_pool'));
+                const allAddresses = new Set();
+                snapshot.forEach(doc => allAddresses.add(doc.id));
+                if(userAddr) allAddresses.add(userAddr.toLowerCase());
+
+                const leaderData = [];
+                const addrArray = Array.from(allAddresses).slice(0, 15);
+
+                for (let addr of addrArray) {
+                    try {
+                        const dash = await fetchWithTimeout(contract.getUserDashboard(addr));
+                        if (dash.isRegistered) {
+                            leaderData.push({ addr, rep: dash.reputation.toNumber(), isMe: userAddr && addr.toLowerCase() === userAddr.toLowerCase() });
+                        }
+                    } catch (e) { console.warn(`地址 ${addr} 查詢超時`); }
+                }
+
+                leaderData.sort((a, b) => b.rep - a.rep);
+                list.innerHTML = leaderData.map((l, i) => `
+                    <div class="leader-item">
+                        <span class="leader-rank">#${i+1}</span>
+                        <span class="leader-addr">${l.addr.substring(0, 10)}...${l.addr.substring(34)}${l.isMe ? '<span class="me-tag">YOU</span>' : ''}</span>
+                        <span class="leader-rep">${l.rep} Rep</span>
+                    </div>`).join('');
+            } catch (e) { console.error(e); } 
+            finally { scanStatus.style.display = 'none'; }
+        }
+        window.renderLeaderboard = renderLeaderboard;
+
+        // --- 核心恢復：資料匯出功能 ---
+        window.handleExportPoll = async function() {
+            if(currentPid === null) return;
+            try {
+                const p = await contract.allPolls(currentPid);
+                const cand = await contract.getCandidates(currentPid);
+                let csv = "選項名稱,UID,累積票權\n";
+                cand.forEach(c => { csv += `${c.name},${c.uid},${c.voteWeight.toString()}\n`; });
+                const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = `UniGov_Report_Poll_${currentPid}.csv`;
+                link.click();
+                window.notify("計票報告匯出成功", "success");
+            } catch (e) { window.notify("匯出失敗", "error"); }
         };
 
-        window.addCandidateInput = function() {
-            const div = document.createElement("div"); div.style.display = "flex"; div.style.gap = "10px"; div.style.marginTop = "8px";
-            div.innerHTML = `<input type="text" class="cand-name" placeholder="選項名稱" style="flex:1; padding:8px; background:#000; border:1px solid var(--border); border-radius:8px; color:white;"><input type="text" class="cand-uid" placeholder="IPFS CID (留空自動補全)" style="flex:2; padding:8px; background:#000; border:1px solid var(--border); border-radius:8px; color:white;">`;
-            document.getElementById("candidateInputsContainer").appendChild(div);
+        window.handleExportAudit = async function() {
+            const log = document.getElementById("log").innerText;
+            const csv = "審計時間,事件內容\n" + new Date().toLocaleString() + "," + log.replace(/>/g, "").trim();
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `UniGov_Audit_Log.csv`;
+            link.click();
+            window.notify("審計日誌匯出成功", "success");
         };
 
-        window.handleCreatePoll = async function() {
-            if(!isRegisteredOnChain) return window.notify("請先註冊身分", "error");
-            const overlay = document.getElementById("mainLoader");
-            const btn = document.getElementById("submitCreateBtn");
-            try { 
-                btn.disabled = true;
-                overlay.style.display = "flex";
-                const topic = document.getElementById("topic").value;
-                const mode = document.getElementById("modeSelect").value;
-                const names = Array.from(document.querySelectorAll(".cand-name")).map(i => i.value || "匿名選項");
-                // UID 自動補全邏輯
-                const uids = Array.from(document.querySelectorAll(".cand-uid")).map(i => i.value || "CAND-" + Math.random().toString(36).substring(2, 6).toUpperCase());
-                
-                const tx = await contract.createPoll(topic, mode, names, uids, 1440); 
-                await tx.wait(); 
-                renderPolls(); 
-                window.showPage('listPage'); 
-            } catch(e) { window.notify("部署失敗", "error"); } 
-            finally { btn.disabled = false; overlay.style.display = "none"; }
-        };
-
-        // --- 平方/排序投票強化 ---
-        window.updateQVCost = function() {
-            const inputs = document.querySelectorAll('.qv-vote-input');
-            let totalCost = 0;
-            inputs.forEach(input => {
-                const val = parseInt(input.value) || 0;
-                totalCost += (val * val);
-            });
-            const preview = document.getElementById("qvCostPreview");
-            const submitBtns = document.querySelectorAll(".vote-submit-btn");
-            if(preview) {
-                preview.innerText = `預算消耗：${totalCost} 點`;
-                const isOver = totalCost > userCredits;
-                preview.style.color = isOver ? "var(--error)" : "var(--warning)";
-                submitBtns.forEach(btn => btn.disabled = isOver || totalCost === 0);
-            }
-        };
-
+        // --- 多模式議題載入 ---
         async function viewDetail(pid) {
             currentPid = pid; window.showPage('detailPage');
             const container = document.getElementById("votingUIContainer");
-            container.innerHTML = `<p style="text-align:center; padding:20px;">載入中...</p>`;
+            container.innerHTML = `<p style="text-align:center; padding:20px;">載入議題數據中...</p>`;
 
             try {
                 const p = await fetchWithTimeout(contract.allPolls(pid));
                 const candidates = await fetchWithTimeout(contract.getCandidates(pid));
                 const modes = ["一般", "平方 (QV)", "募資 (QF)", "排序", "權重"];
                 
-                const isCreator = p.creator.toLowerCase() === userAddr.toLowerCase();
-                const canEdit = p.totalVotes.toNumber() === 0;
-                const isExpired = p.endTime.toNumber() < Math.floor(Date.now() / 1000);
-                const statusHtml = isExpired ? `<span class="status-tag status-closed">已截止</span>` : `<span class="status-tag status-active">進行中</span>`;
-
+                const isExp = p.endTime.toNumber() < Math.floor(Date.now() / 1000);
                 document.getElementById("pollInfo").innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <h1>${p.topic}</h1>
-                        ${statusHtml}
+                        <span class="status-tag ${isExp ? 'status-closed' : 'status-active'}">${isExp ? '已截止' : '進行中'}</span>
                     </div>
-                    <span class="title-badge" style="background:var(--p); color:white; padding:4px 12px; border-radius:50px; display:inline-block; margin-top:10px;">${modes[p.mode]}模式</span>
-                    <p style="font-size:0.8rem; color:var(--muted); margin-top:10px;">發起位址: ${p.creator}</p>`;
+                    <span class="title-badge" style="background:var(--p); color:white; padding:4px 12px; border-radius:50px;">${modes[p.mode]}模式</span>`;
                 
                 document.getElementById("oracleGuess").innerHTML = candidates.map((c, i) => `<option value="${i}">${c.name}</option>`).join('');
-                document.getElementById("creatorEditSection").style.display = (isCreator && canEdit) ? "block" : "none";
-                if (isCreator && canEdit) document.getElementById("editTopic").value = p.topic;
+                document.getElementById("creatorEditSection").style.display = (p.creator.toLowerCase() === userAddr.toLowerCase() && p.totalVotes.toNumber() === 0) ? "block" : "none";
+                if(p.creator.toLowerCase() === userAddr.toLowerCase()) document.getElementById("editTopic").value = p.topic;
 
                 document.getElementById("qvCreditsUI").style.display = (p.mode === 1) ? "flex" : "none";
                 document.getElementById("userCreditsDisplay").innerText = userCredits;
 
                 if (p.mode === 3) {
-                    // --- 排序模式介面 (Ranked Choice) ---
-                    container.innerHTML = `
-                        <div class="card">
-                            <h3>請拖動排定優先級 (第一位為最優選)</h3>
-                            <div id="rankedSortList" style="margin:20px 0;">
-                                ${candidates.map((c, i) => `
-                                    <div class="ranked-item" data-id="${i}">
-                                        <div class="rank-number">${i+1}</div>
-                                        <div class="cand-img-wrap" style="width:50px; height:50px; margin:0;"><img src="${resolveCandidateImage(c.uid)}" class="cand-img"></div>
-                                        <div style="flex:1"><b>${c.name}</b><br><small>累計票權: ${c.voteWeight.toString()}</small></div>
-                                        <i class="fa-solid fa-bars" style="color:var(--muted)"></i>
-                                    </div>`).join('')}
-                            </div>
-                            <button class="btn-success" style="width:100%; height:55px;" onclick="govVote(${pid}, -1, false, true)">提交排序首選投票</button>
-                        </div>`;
-                    new Sortable(document.getElementById("rankedSortList"), { animation: 150, onEnd: () => {
-                        document.querySelectorAll('.rank-number').forEach((el, idx) => el.innerText = idx + 1);
-                    }});
+                    container.innerHTML = `<div class="card"><h3>請拖動排定優先級 (第一位為最優選)</h3><div id="rankedSortList" style="margin:20px 0;">${candidates.map((c, i) => `<div class="ranked-item" data-id="${i}"><div class="rank-number">${i+1}</div><div class="cand-img-wrap" style="width:40px; height:40px; margin:0;"><img src="${resolveCandidateImage(c.uid)}" class="cand-img"></div><div style="flex:1"><b>${c.name}</b></div><i class="fa-solid fa-bars" style="color:var(--muted)"></i></div>`).join('')}</div><button class="btn-success" style="width:100%; height:55px;" onclick="govVote(${pid}, -1, false, true)">提交排序首選</button></div>`;
+                    new Sortable(document.getElementById("rankedSortList"), { animation: 150, onEnd: () => { document.querySelectorAll('.rank-number').forEach((el, idx) => el.innerText = idx + 1); }});
                 } else {
-                    // --- 標準模式 (包含 QF 試算提醒) ---
-                    container.innerHTML = `
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-                            ${candidates.map((c, i) => `
-                                <div class="card" style="text-align:center">
-                                    <div class="cand-img-wrap"><img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed=E'"></div>
-                                    <h3>${c.name}</h3><p>目前累積: ${c.voteWeight.toString()} 票</p>
-                                    ${p.mode === 1 ? `<input type="number" id="qv-${i}" class="qv-vote-input" placeholder="欲投數量" min="1" oninput="updateQVCost()" style="margin-bottom:10px; width:80px; text-align:center; background:#000; border:1px solid var(--border); color:white; border-radius:5px;">` : ''}
-                                    ${p.mode === 2 ? `<p style="font-size:0.75rem; color:var(--success);">💡 投入 Rep 將依 QF 方根算法匹配獎金池</p>` : ''}
-                                    <button class="vote-submit-btn" onclick="govVote(${pid}, ${i}, ${p.mode === 1})">${p.mode === 1 ? '執行 QV 投票' : '投下一票'}</button>
-                                </div>`).join('')}
-                        </div>`;
+                    container.innerHTML = `<div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">${candidates.map((c, i) => `<div class="card" style="text-align:center"><div class="cand-img-wrap"><img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed=E'"></div><h3>${c.name}</h3><p>累積: ${c.voteWeight.toString()} 票</p>${p.mode === 1 ? `<input type="number" id="qv-${i}" class="qv-vote-input" placeholder="票數" min="1" oninput="updateQVCost()" style="width:70px; margin-bottom:10px; text-align:center; background:#000; border:1px solid var(--border); color:white; border-radius:5px;">` : ''}<button class="vote-submit-btn" onclick="govVote(${pid}, ${i}, ${p.mode === 1})">${p.mode === 1 ? '執行 QV 投票' : '投下一票'}</button></div>`).join('')}</div>`;
                 }
-            } catch (e) { container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--error);">數據讀取失敗，請確認網路連線</p>`; }
+            } catch (e) { container.innerHTML = `<p style="text-align:center; padding:20px; color:var(--error);">讀取超時，請重新進入議題</p>`; }
         }
         window.viewDetail = viewDetail;
+
+        window.updateQVCost = () => {
+            const inputs = document.querySelectorAll('.qv-vote-input');
+            let total = 0; inputs.forEach(i => { const v = parseInt(i.value)||0; total += (v*v); });
+            const p = document.getElementById("qvCostPreview");
+            if(p) { 
+                p.innerText = `預計消耗：${total} 點`;
+                const over = total > userCredits; p.style.color = over ? "var(--error)" : "var(--warning)";
+                document.querySelectorAll(".vote-submit-btn").forEach(b => b.disabled = over || total === 0);
+            }
+        };
 
         window.govVote = async function(pid, cid, isQV, isRanked = false) {
             if(!isRegisteredOnChain) return window.notify("請先註冊身分", "error");
             let finalCid = cid; let val = 1;
-            if (isRanked) {
-                const first = document.querySelector('#rankedSortList .ranked-item');
-                finalCid = first ? parseInt(first.getAttribute('data-id')) : -1;
-            } else if (isQV) { val = document.getElementById(`qv-${cid}`).value; }
-            if(!val || val <= 0) return window.notify("請輸入有效數量", "warning");
+            if (isRanked) { const first = document.querySelector('#rankedSortList .ranked-item'); finalCid = first ? parseInt(first.getAttribute('data-id')) : -1; }
+            else if (isQV) { val = document.getElementById(`qv-${cid}`).value; }
+            if(!val || val <= 0) return window.notify("請輸入票數", "warning");
 
             const overlay = document.getElementById("mainLoader");
             try { 
-                overlay.style.display = "flex";
-                window.notify("正在傳送鏈上交易...", "info");
+                overlay.style.display = "flex"; window.notify("正在處理鏈上交易...", "info");
                 const tx = await contract.castVote(pid, finalCid, val); 
                 await tx.wait(); confetti(); syncUserDashboard(); viewDetail(pid);
-            } catch (e) { window.notify("交易失敗", "error"); } 
-            finally { overlay.style.display = "none"; }
+            } catch (e) { window.notify("失敗", "error"); } finally { overlay.style.display = "none"; }
         };
 
-        // --- 核心功能模組 (預言機、編輯、刪除) ---
+        window.handleDailyCheckIn = function() {
+            localRepBonus += 10; updateUI(); savePersistedData(); 
+            window.notify("簽到成功！本地積分已增加", "success"); confetti();
+        };
+
         window.handleEditPollMetadata = async function() {
             const overlay = document.getElementById("mainLoader");
-            try {
-                overlay.style.display = "flex";
-                const tx = await contract.updatePollMetadata(currentPid, document.getElementById("editTopic").value, [], []);
-                await tx.wait(); window.notify("鏈上標題修改成功", "success"); viewDetail(currentPid);
-            } catch (e) { window.notify("修改失敗", "error"); } 
-            finally { overlay.style.display = "none"; }
+            try { overlay.style.display = "flex"; const tx = await contract.updatePollMetadata(currentPid, document.getElementById("editTopic").value, [], []); await tx.wait(); window.notify("修改成功", "success"); viewDetail(currentPid); } catch (e) { window.notify("失敗", "error"); } finally { overlay.style.display = "none"; }
         };
 
         window.handleDeletePoll = async function() {
-            if(!confirm("確定要標記刪除？")) return;
+            if(!confirm("標記刪除？")) return;
             const overlay = document.getElementById("mainLoader");
-            try {
+            try { overlay.style.display = "flex"; const p = await contract.allPolls(currentPid); const tx = await contract.updatePollMetadata(currentPid, "[DELETED] " + p.topic, [], []); await tx.wait(); window.notify("已標記刪除", "success"); renderPolls(); window.showPage('listPage'); } catch (e) { window.notify("失敗", "error"); } finally { overlay.style.display = "none"; }
+        };
+
+        window.handleOracleBet = () => { window.notify("預言提交成功", "success"); confetti(); };
+
+        window.connectWalletFlow = async function() {
+            try { sessionStorage.removeItem('explicitLogout'); const accs = await provider.send("eth_requestAccounts", []); if(accs.length > 0) await setupSession(accs[0]); } catch (e) { window.notify("連線取消", "error"); }
+        };
+        window.handleRegisterOnChain = async function() {
+            const overlay = document.getElementById("mainLoader");
+            try { overlay.style.display = "flex"; const tx = await contract.register("User", "default"); await tx.wait(); await syncUserDashboard(); confetti(); } catch (e) { window.notify("註冊失敗", "error"); } finally { overlay.style.display = "none"; }
+        };
+        window.handleCreatePoll = async function() {
+            if(!isRegisteredOnChain) return window.notify("請先註冊", "error");
+            const overlay = document.getElementById("mainLoader");
+            try { 
                 overlay.style.display = "flex";
-                const p = await contract.allPolls(currentPid);
-                const tx = await contract.updatePollMetadata(currentPid, "[DELETED] " + p.topic, [], []);
-                await tx.wait(); window.notify("提案已標記刪除", "success"); renderPolls(); window.showPage('listPage');
-            } catch (e) { window.notify("失敗", "error"); } 
-            finally { overlay.style.display = "none"; }
+                const topic = document.getElementById("topic").value;
+                const names = Array.from(document.querySelectorAll(".cand-name")).map(i => i.value || "選項");
+                const uids = Array.from(document.querySelectorAll(".cand-uid")).map(i => i.value || "CAND-" + Math.random().toString(36).substring(2, 6).toUpperCase());
+                const tx = await contract.createPoll(topic, document.getElementById("modeSelect").value, names, uids, 1440); 
+                await tx.wait(); renderPolls(); window.showPage('listPage');
+            } catch(e) { window.notify("失敗", "error"); } finally { overlay.style.display = "none"; }
         };
-
-        window.handleOracleBet = function() {
-            const sel = document.getElementById("oracleGuess");
-            if(!sel || sel.options.length === 0) return;
-            window.notify(`預言提交成功：您看好 [${sel.options[sel.selectedIndex].text}]`, "success");
-            confetti();
+        window.addCandidateInput = function() {
+            const div = document.createElement("div"); div.style.display = "flex"; div.style.gap = "10px"; div.style.marginTop = "8px";
+            div.innerHTML = `<input type="text" class="cand-name" placeholder="名稱" style="flex:1; background:#000; color:white; border:1px solid var(--border); border-radius:5px; padding:5px;"><input type="text" class="cand-uid" placeholder="CID (自動補全)" style="flex:2; background:#000; color:white; border:1px solid var(--border); border-radius:5px; padding:5px;">`;
+            document.getElementById("candidateInputsContainer").appendChild(div);
         };
+        window.disconnectWallet = function() { sessionStorage.setItem('explicitLogout', 'true'); location.reload(); };
 
-        // --- 趨勢審計與基礎功能 ---
+        function resolveCandidateImage(uid) {
+            const cidRegex = /(Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{58}|bafy[a-zA-Z0-9]{40,}|bafk[a-zA-Z0-9]{40,})/;
+            const match = (uid||'').match(cidRegex);
+            return match ? `https://ipfs.io/ipfs/${match[0]}` : `https://api.dicebear.com/7.x/identicon/svg?seed=${uid||'U'}`;
+        }
+
         async function updateAuditTrend() {
             if(!chartInstance || !contract) return;
             try {
@@ -597,46 +618,16 @@
                     contract.queryFilter("PollCreated", startBlock).catch(() => [])
                 ]);
                 const total = vE.length + pE.length;
-                chartInstance.data.datasets[0].data = [total * 0.3, total * 0.7, total];
+                chartInstance.data.datasets[0].data = [total * 0.4, total * 0.7, total];
                 chartInstance.update();
-                document.getElementById("log").innerText = `> 鏈上審計：最近 5,000 區塊活動事件累計: ${total}`;
             } catch(e) {}
         }
 
         function initChartFrame() {
             const ctx = document.getElementById('mainChart').getContext('2d');
             if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['前日','昨日','今日'], datasets: [{ label: '治理活躍趨勢', data: [0, 0, 0], borderColor: '#6366f1', fill: true, tension: 0.4 }] }, options: { plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#94a3b8' } }, x: { ticks: { color: '#94a3b8' } } } } });
+            chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['日前','昨日','今日'], datasets: [{ label: '全鏈治理活躍趨勢', data: [0, 0, 0], borderColor: '#6366f1', fill: true, tension: 0.4 }] }, options: { plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#94a3b8' } }, x: { ticks: { color: '#94a3b8' } } } } });
         }
-
-        window.connectWalletFlow = async function() {
-            try { sessionStorage.removeItem('explicitLogout'); const accs = await provider.send("eth_requestAccounts", []); if(accs.length > 0) await setupSession(accs[0]); } catch (e) { window.notify("連線取消", "error"); }
-        };
-        window.handleDailyCheckIn = function() {
-            localRepBonus += 10; updateUI(); savePersistedData(); window.notify("簽到成功！本地積分已增加", "success"); confetti();
-        };
-        window.handleRegisterOnChain = async function() {
-            const overlay = document.getElementById("mainLoader");
-            try { overlay.style.display = "flex"; const tx = await contract.register("User", "default"); await tx.wait(); await syncUserDashboard(); confetti(); } catch (e) { window.notify("註冊失敗", "error"); } finally { overlay.style.display = "none"; }
-        };
-        window.disconnectWallet = function() { sessionStorage.setItem('explicitLogout', 'true'); location.reload(); };
-
-        function resolveCandidateImage(uid) {
-            const cidRegex = /(Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{58}|bafy[a-zA-Z0-9]{40,}|bafk[a-zA-Z0-9]{40,})/;
-            const match = (uid||'').match(cidRegex);
-            return match ? `https://ipfs.io/ipfs/${match[0]}` : `https://api.dicebear.com/7.x/identicon/svg?seed=${uid||'U'}`;
-        }
-
-        window.spinWheel = function() {
-            const deg = 1800 + Math.random() * 1800;
-            document.getElementById("wheel").style.transform = `rotate(${deg}deg)`;
-            setTimeout(() => {
-                const res = ["治理開路者", "共識之眼", "真理護盾", "公平之秤"][Math.floor(Math.random() * 4)];
-                document.getElementById("wheelResult").innerText = "恭喜獲得："+res;
-                if(!userTitles.includes(res)) { userTitles.push(res); updateUI(); savePersistedData(); }
-                confetti();
-            }, 4000);
-        };
 
         async function renderPolls() {
             const grid = document.getElementById("pollGrid");
@@ -648,17 +639,9 @@
                     const p = await fetchWithTimeout(contract.allPolls(i));
                     if (p.topic.startsWith("[DELETED]")) continue;
                     const isExp = p.endTime.toNumber() < Math.floor(Date.now() / 1000);
-                    html += `
-                        <div class="card" onclick="viewDetail(${i})" style="cursor:pointer; border-top: 5px solid ${isExp ? 'var(--muted)' : 'var(--p)'};">
-                            <div style="display:flex; justify-content:space-between;">
-                                <h3>${p.topic}</h3>
-                                <span class="status-tag ${isExp ? 'status-closed' : 'status-active'}">${isExp ? '已截止' : '進行中'}</span>
-                            </div>
-                            <p style="color:var(--muted); font-size:0.85rem; margin-top:10px;">累計票數：${p.totalVotes.toString()}</p>
-                            <button class="btn-ghost" style="width:100%; margin-top:15px;">進入議題詳情</button>
-                        </div>`;
+                    html += `<div class="card" onclick="viewDetail(${i})" style="cursor:pointer; border-top: 5px solid ${isExp ? 'var(--muted)' : 'var(--p)'};"><div style="display:flex; justify-content:space-between;"><h3>${p.topic}</h3><span class="status-tag ${isExp ? 'status-closed' : 'status-active'}">${isExp ? '已截止' : '進行中'}</span></div><p style="color:var(--muted); font-size:0.85rem; margin-top:10px;">累計票數：${p.totalVotes.toString()}</p><button class="btn-ghost" style="width:100%; margin-top:15px;">進入議題 / 投票</button></div>`;
                 }
-                grid.innerHTML = html || '<p>目前尚無議案</p>';
+                grid.innerHTML = html || '<p>尚無發布議案</p>';
             } catch (e) {}
         }
 
@@ -670,7 +653,7 @@
             document.querySelectorAll('#pollGrid .card').forEach(c => { c.style.display = c.innerText.toLowerCase().includes(q) ? 'block' : 'none'; });
         };
 
-        window.onload = () => { init(); updateModeTips(); };
+        window.onload = () => { init(); };
     </script>
 </body>
 
