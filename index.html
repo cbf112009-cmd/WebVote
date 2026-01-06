@@ -36,7 +36,7 @@
             --success: #10b981; --error: #ef4444; --warning: #f1c40f;
         }
 
-        * { box-sizing: border-box; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        * { box-sizing: border-box; transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text);
             margin: 0; min-height: 100vh; background-image: radial-gradient(circle at 50% -20%, #1e1b4b 0%, var(--bg) 80%);
@@ -61,12 +61,13 @@
 
         .card { background: var(--glass); border: 1px solid var(--border); border-radius: 24px; padding: 30px; margin-bottom: 20px; position: relative; overflow: hidden; }
 
+        /* 標籤與時間 */
         .status-tag { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .status-active { background: rgba(16, 185, 129, 0.2); color: var(--success); }
         .status-closed { background: rgba(148, 163, 184, 0.2); color: var(--muted); }
-        .timer-badge { font-size: 0.8rem; color: var(--warning); display: flex; align-items: center; gap: 6px; margin-top: 8px; font-family: monospace; font-weight: 700; background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); width: fit-content; }
+        .timer-badge { font-size: 0.8rem; color: var(--warning); display: flex; align-items: center; gap: 6px; margin-top: 8px; font-family: monospace; font-weight: 700; background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); }
 
-        .cand-img-wrap { width: 140px; height: 140px; border-radius: 50%; border: 3px solid var(--p); display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 0 auto 15px; background: #111; }
+        .cand-img-wrap { width: 140px; height: 140px; border-radius: 50%; border: 3px solid var(--p); display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 0 auto 15px; background: #111; position: relative; }
         .cand-img { width: 100%; height: 100%; object-fit: cover; }
 
         .lvl-container { margin: 25px 0; text-align: left; background: rgba(255,255,255,0.02); padding: 20px; border-radius: 15px; border: 1px solid var(--border); }
@@ -80,46 +81,47 @@
         .btn-success { background: var(--success); }
         .btn-danger { background: var(--error); }
 
-        #toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 5000; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: #1e293b; border-left: 4px solid var(--p); color: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); animation: slideIn 0.3s ease; }
+        #toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { background: #1e292b; border-left: 4px solid var(--p); color: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); animation: slideIn 0.3s ease; pointer-events: auto; }
 
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 15, 26, 0.9); z-index: 6000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 15, 26, 0.95); z-index: 9999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
         .loader { width: 48px; height: 48px; border: 5px solid #FFF; border-bottom-color: var(--p); border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
         @keyframes rotation { 0% { transform: rotate(0deg) } 100% { transform: rotate(360deg) } }
 
+        /* 幸運轉盤專屬樣式 */
+        .wheel-wrap { position: relative; width: 340px; height: 340px; margin: 40px auto; }
+        #wheel { width: 100%; height: 100%; border-radius: 50%; border: 12px solid #1e293b; background: conic-gradient(#6366f1 0deg 72deg, #ec4899 72deg 144deg, #06b6d4 144deg 216deg, #f1c40f 216deg 288deg, #10b981 288deg 360deg); transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); box-shadow: 0 0 40px rgba(99, 102, 241, 0.3); }
+        .wheel-pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 40px solid var(--error); z-index: 10; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
+
         .ranked-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 10px; cursor: grab; display: flex; align-items: center; gap: 15px; }
-        .rank-number { width: 30px; height: 30px; border-radius: 50%; background: var(--p); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; }
-        
+        .rank-number { width: 32px; height: 32px; border-radius: 50%; background: var(--p); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; }
+
         input, select { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; color: white; margin-top: 5px; outline: none; }
-        .qv-info-badge { background: rgba(241, 196, 15, 0.1); border: 1px solid var(--warning); padding: 15px; border-radius: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-
-        .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e293b; padding: 40px; border-radius: 24px; border: 1px solid var(--p); z-index: 7000; width: 90%; max-width: 500px; display: none; box-shadow: 0 0 100px rgba(0,0,0,1); }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 6999; display: none; backdrop-filter: blur(5px); }
-
         .time-inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
         .time-unit { text-align: center; }
         .time-unit label { font-size: 0.7rem; color: var(--muted); margin-bottom: 5px; display: block; }
-        
-        #log { background: #000; color: #10b981; font-family: monospace; padding: 20px; border-radius: 15px; height: 160px; overflow-y: auto; font-size: 13px; border: 1px solid var(--border); line-height: 1.6; }
+
+        .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e293b; padding: 40px; border-radius: 24px; border: 1px solid var(--p); z-index: 8000; width: 90%; max-width: 500px; display: none; box-shadow: 0 0 100px rgba(0,0,0,1); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 7999; display: none; backdrop-filter: blur(5px); }
     </style>
 </head>
 
 <body>
 
     <div id="mainLoader" class="loading-overlay"><span class="loader"></span></div>
-    <div id="modalOverlay" class="modal-overlay" onclick="closeProfileModal()"></div>
+    <div id="modalOverlay" class="modal-overlay" onclick="window.closeProfileModal()"></div>
     <div id="toast-container"></div>
     
     <!-- 身分編輯 Modal -->
     <div id="profileModal" class="modal">
         <h2 style="margin-bottom:20px;">修改治理身分</h2>
-        <label style="color:var(--muted); font-size:0.8rem;">治理暱稱</label>
+        <label style="color:var(--muted); font-size:0.8rem;">新治理暱稱</label>
         <input type="text" id="editUserName" placeholder="輸入新的名稱">
-        <label style="margin-top:15px; display:block; color:var(--muted); font-size:0.8rem;">頭像 CID (IPFS Hash)</label>
+        <label style="margin-top:15px; display:block; color:var(--muted); font-size:0.8rem;">新頭像 CID (IPFS Hash)</label>
         <input type="text" id="editUserAvatar" placeholder="Qm... 或留空使用預設">
         <div style="display:flex; gap:10px; margin-top:30px;">
-            <button class="btn-ghost" style="flex:1" onclick="closeProfileModal()">取消</button>
-            <button style="flex:1" onclick="handleUpdateProfile()">同步至鏈上</button>
+            <button class="btn-ghost" style="flex:1" onclick="window.closeProfileModal()">取消</button>
+            <button style="flex:1" onclick="window.handleUpdateProfile()">同步至鏈上</button>
         </div>
     </div>
 
@@ -130,7 +132,7 @@
             <button class="btn-ghost" onclick="showPage('listPage')">大廳</button>
             <button class="btn-ghost" onclick="showPage('modeInfoPage')">百科</button>
             <button class="btn-ghost" onclick="showPage('statPage')">審計</button>
-            <button class="btn-ghost" onclick="showPage('wheelPage')">轉盤</button>
+            <button class="btn-ghost" onclick="showPage('wheelPage')">幸運轉盤</button>
         </div>
         <div id="userSection" style="margin-left:auto; display:flex; align-items:center; gap:15px;">
             <div id="userInfo" class="user-chip" style="display:none" onclick="showPage('profilePage')">
@@ -138,29 +140,29 @@
                 <span id="navName">...</span>
                 <span id="navRep" style="color:var(--warning); font-weight:bold;">Rep: 0</span>
             </div>
-            <button id="connBtn" onclick="connectWalletFlow()"><i class="fa-solid fa-wallet"></i> 連接錢包</button>
-            <button id="discoBtn" class="btn-ghost" style="display:none" onclick="disconnectWallet()"><i class="fa-solid fa-right-from-bracket"></i></button>
+            <button id="connBtn" onclick="window.connectWalletFlow()"><i class="fa-solid fa-wallet"></i> 連接錢包</button>
+            <button id="discoBtn" class="btn-ghost" style="display:none" onclick="window.disconnectWallet()"><i class="fa-solid fa-right-from-bracket"></i></button>
             <button onclick="showPage('createPage')"><i class="fa-solid fa-plus"></i> 提案</button>
         </div>
     </nav>
 
     <div class="container">
 
-        <!-- 1. 引導頁面 (Onboarding 1-2-3) -->
+        <!-- 1. 引導頁面 (Onboarding) -->
         <div id="guidePage" class="page active">
             <div class="card" style="text-align:center; padding:80px 40px;">
                 <h1>UniGov 治理生態中樞</h1>
                 <p style="color:var(--muted); font-size:1.1rem;">整合身分主權、多維計票與精準時間管控。數據全網鏈上同步。</p>
                 <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:20px; margin-top:40px; text-align:left;">
                     <div class="card"><b style="color:var(--p); font-size:1.3rem;">01</b><h3>建立身分</h3><p>連接錢包執行註冊，將地址轉化為具備聲譽 (Rep) 的治理身分。</p></div>
-                    <div class="card"><b style="color:var(--p); font-size:1.3rem;">02</b><h3>參與共識</h3><p>提供五大計票模式，設定精準決策週期。數據鏈上存證，秒級倒數。</p></div>
-                    <div class="card"><b style="color:var(--p); font-size:1.3rem;">03</b><h3>累積榮譽</h3><p>透過投票與簽到提升 Rep，在成就牆展示您的去中心化治理資歷。</p></div>
+                    <div class="card"><b style="color:var(--p); font-size:1.3rem;">02</b><h3>參與共識</h3><p>提供五大計票模式，設定自定義決策週期。數據鏈上存證，秒級倒數。</p></div>
+                    <div class="card"><b style="color:var(--p); font-size:1.3rem;">03</b><h3>累積榮譽</h3><p>透過投票與簽到提升 Rep，在成就牆展示您的治理稱號與資歷。</p></div>
                 </div>
-                <button style="margin:40px auto; padding:18px 50px;" onclick="showPage('listPage')">立即開啟共識之旅</button>
+                <button style="margin:40px auto; padding:18px 50px;" onclick="showPage('listPage')">開啟共識之旅</button>
             </div>
         </div>
 
-        <!-- 2. 大廳頁面 (搜尋、精準倒數) -->
+        <!-- 2. 大廳頁面 (搜尋、精準計時) -->
         <div id="listPage" class="page">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
                 <h1>治理議案中心</h1>
@@ -169,29 +171,33 @@
             <div id="pollGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap:24px;"></div>
         </div>
 
-        <!-- 3. 審計看板 (日誌匯出) -->
+        <!-- 3. 審計看板 -->
         <div id="statPage" class="page">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h1>治理趨勢審計 (鏈上 Tx Hash 追蹤)</h1>
-                <button class="btn-ghost" onclick="handleExportAudit()"><i class="fa-solid fa-download"></i> 匯出審計日誌 CSV</button>
+                <h1>治理趨勢審計 (鏈上實時事件)</h1>
+                <button class="btn-ghost" onclick="window.handleExportAudit()"><i class="fa-solid fa-download"></i> 匯出審計日誌 CSV</button>
             </div>
             <div class="card" style="min-height: 350px;"><canvas id="mainChart" height="150"></canvas></div>
-            <div id="log">> 系統狀態：正在索引區塊鏈實時事件流，確保數據具備 Traceability...</div>
+            <div id="log">> 系統狀態：監聽區塊鏈 VoteCast 與 PollCreated 實時事件流...</div>
         </div>
 
-        <!-- 4. 幸運轉盤 -->
+        <!-- 4. 幸運轉盤 (不刪減！) -->
         <div id="wheelPage" class="page" style="text-align:center">
-            <h1>治理運勢轉盤</h1>
-            <div class="wheel-wrap"><div class="wheel-pointer"></div><div id="wheel"></div></div>
-            <button style="margin:30px auto;" onclick="spinWheel()">抽取今日稱號</button>
-            <h2 id="wheelResult" style="color:var(--warning); min-height:40px;"></h2>
+            <h1>治理運勢轉盤 2.0</h1>
+            <p style="color:var(--muted); margin-bottom:20px;">每日可抽取一次專屬治理稱號，稱號將永久保存在您的成就收藏室。</p>
+            <div class="wheel-wrap">
+                <div class="wheel-pointer"></div>
+                <div id="wheel"></div>
+            </div>
+            <button style="margin:30px auto; padding:15px 50px; font-size:1.1rem;" onclick="window.spinWheel()">啟動命運之輪</button>
+            <h2 id="wheelResult" style="color:var(--warning); min-height:40px; font-weight:800;"></h2>
         </div>
 
-        <!-- 5. 百科頁面 (1-5 編號) -->
+        <!-- 5. 百科頁面 (1-5 編號補全) -->
         <div id="modeInfoPage" class="page">
             <h1>治理模式百科全書</h1>
             <div style="display:grid; gap:20px;">
-                <div class="card"><h3>1. 一般模式 (Standard)</h3><p>一人一票，最純粹的民主基準。公式：$得票 = \sum 選民數$</p></div>
+                <div class="card"><h3>1. 一般模式 (Standard)</h3><p>一人一票，最純粹的基準民主。公式：$得票 = \sum 選民數$</p></div>
                 <div class="card"><h3>2. 平方投票 (Quadratic)</h3><p>成本隨票數平方增長。公式：$消耗 = 票數^2$。有效防止大戶霸凌。</p></div>
                 <div class="card"><h3>3. 平方募資 (QF)</h3><p>重視人數而非金額。公式：$獎勵 \propto (\sum \sqrt{捐助})^2$。優化預算分配。</p></div>
                 <div class="card"><h3>4. 偏好排序 (Ranked Choice)</h3><p>拖曳排序選項，直到選出大眾公約數最高者。消除棄保效應。</p></div>
@@ -199,16 +205,16 @@
             </div>
         </div>
 
-        <!-- 6. 個人面板 (簽到大一統 & 身分修改) -->
+        <!-- 6. 個人面板 (簽到、身分修改) -->
         <div id="profilePage" class="page">
             <div class="card" style="max-width:650px; margin:0 auto; text-align:center">
                 <h2>個人治理者儀表板</h2>
                 <div id="regAlert" style="background:rgba(239,68,68,0.1); border:1px solid var(--error); padding:15px; border-radius:15px; margin-bottom:20px; display:none;">
                     <b>尚未註冊身分</b><br>
-                    <button onclick="handleRegisterOnChain()" class="btn-danger" style="margin:10px auto;">執行鏈上註冊</button>
+                    <button onclick="window.handleRegisterOnChain()" class="btn-danger" style="margin:10px auto;">執行鏈上註冊</button>
                 </div>
-                <img id="profileAvatar" src="" style="width:130px; height:130px; border-radius:50%; border:3px solid var(--p); margin: 20px 0; object-fit:cover;">
-                <div style="margin-bottom:20px;"><button class="btn-ghost" onclick="openProfileModal()"><i class="fa-solid fa-user-pen"></i> 修改身分名稱/頭像</button></div>
+                <img id="profileAvatar" src="" style="width:140px; height:140px; border-radius:50%; border:3px solid var(--p); margin: 20px 0; object-fit:cover;">
+                <div style="margin-bottom:20px;"><button class="btn-ghost" onclick="window.openProfileModal()"><i class="fa-solid fa-user-pen"></i> 修改身分名稱/頭像</button></div>
                 
                 <div class="lvl-container">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
@@ -222,7 +228,7 @@
                 <div class="task-list">
                     <div class="card" style="padding:15px; border:1px solid var(--border); display:flex; align-items:center; gap:15px;">
                         <div style="flex:1; text-align:left;"><b>每日治理簽到</b><br><small>立即獲得 +10 Rep (大一統數值)</small></div>
-                        <button onclick="handleDailyCheckIn()" id="checkInBtn" class="btn-success">執行簽到</button>
+                        <button onclick="window.handleDailyCheckIn()" id="checkInBtn" class="btn-success">執行簽到</button>
                     </div>
                 </div>
 
@@ -231,25 +237,25 @@
                     <div id="titleCollection" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:10px;"></div>
                 </div>
 
-                <button class="btn-danger" style="width:100%; margin-top:25px;" onclick="disconnectWallet()">斷開連接</button>
+                <button class="btn-danger" style="width:100%; margin-top:25px;" onclick="window.disconnectWallet()">斷開連接</button>
             </div>
         </div>
 
-        <!-- 7. 發起提案頁面 (UID 自動補全 & 日/時/分/秒精準時間) -->
+        <!-- 7. 發起提案頁面 (不刪減：精準時間設置) -->
         <div id="createPage" class="page">
             <div class="card" style="max-width:800px; margin:0 auto">
                 <h2>部署鏈上治理議案</h2>
                 <label>議案標題</label>
-                <input type="text" id="topic" placeholder="例：誰是 2026 年度最佳治理項目？">
+                <input type="text" id="topic" placeholder="例：誰是 2026 年度最佳社區項目？">
                 
                 <div style="margin-top:15px;">
-                    <label>治理模式 (支援 0-4)</label>
+                    <label>治理模式 (支援 1~5 模式)</label>
                     <select id="modeSelect">
-                        <option value="0">0 - 一般模式 (Standard)</option>
-                        <option value="1">1 - 平方投票 (Quadratic)</option>
-                        <option value="2">2 - 平方募資 (QF Matching)</option>
-                        <option value="3">3 - 偏好排序 (Ranked Choice)</option>
-                        <option value="4">4 - 權重投票 (Weighted Voting)</option>
+                        <option value="0">一般模式 (Standard)</option>
+                        <option value="1">平方投票 (Quadratic)</option>
+                        <option value="2">平方募資 (QF Matching)</option>
+                        <option value="3">偏好排序 (Ranked Choice)</option>
+                        <option value="4">權重投票 (Weighted Voting)</option>
                     </select>
                 </div>
 
@@ -264,18 +270,18 @@
                 </div>
 
                 <div id="candidateInputsContainer" style="margin-top:20px;">
-                    <h4 style="margin-bottom:10px;">候選選項</h4>
+                    <h4 style="margin-bottom:10px;">候選選項配置</h4>
                 </div>
-                <button class="btn-ghost" onclick="addCandidateInput()" style="width:100%; margin-top:10px;">新增候選選項</button>
-                <button id="submitCreateBtn" onclick="handleCreatePoll()" style="width:100%; margin-top:30px; height:60px;">部署至區塊鏈 (Sepolia)</button>
+                <button class="btn-ghost" onclick="window.addCandidateInput()" style="width:100%; margin-top:10px;">新增候選選項</button>
+                <button id="submitCreateBtn" onclick="window.handleCreatePoll()" style="width:100%; margin-top:30px; height:60px;">部署提案至 Sepolia</button>
             </div>
         </div>
 
-        <!-- 8. 詳情頁面 (倒數、編輯鎖、匯出) -->
+        <!-- 8. 詳情頁面 (倒數、編輯鎖、匯出、圖片修復) -->
         <div id="detailPage" class="page">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <button class="btn-ghost" onclick="showPage('listPage')"><i class="fa-solid fa-arrow-left"></i> 返回列表</button>
-                <button class="btn-ghost" onclick="handleExportPoll()"><i class="fa-solid fa-file-export"></i> 匯出計票報告</button>
+                <button class="btn-ghost" onclick="window.handleExportPoll()"><i class="fa-solid fa-file-export"></i> 匯出計票報告</button>
             </div>
             <div id="pollInfo" class="card" style="border-left: 8px solid var(--p);"></div>
             
@@ -288,7 +294,7 @@
                 <h3>治理預言機 (Oracle)</h3>
                 <div style="display:flex; gap:10px; margin-top:15px;">
                     <select id="oracleGuess" style="flex:2; padding:10px; background:#000; color:white; border-radius:8px;"></select>
-                    <button onclick="handleOracleBet()" class="btn-success" style="flex:1;">提交預測</button>
+                    <button onclick="window.handleOracleBet()" class="btn-success" style="flex:1;">提交預測</button>
                 </div>
             </div>
 
@@ -296,18 +302,11 @@
                 <h3 style="color:var(--warning);">發起人編輯面板 (0 票鎖定)</h3>
                 <input type="text" id="editTopic" style="width:100%; padding:10px; background:#000; border:1px solid var(--border); color:white; border-radius:8px;">
                 <div style="display:flex; gap:10px; margin-top:15px;">
-                    <button onclick="handleEditPollMetadata()" class="btn-success" style="flex:2;">同步修改</button>
-                    <button onclick="handleDeletePoll()" class="btn-danger" style="flex:1;">標記刪除</button>
+                    <button onclick="window.handleEditPollMetadata()" class="btn-success" style="flex:2;">同步修改</button>
+                    <button onclick="window.handleDeletePoll()" class="btn-danger" style="flex:1;">標記刪除</button>
                 </div>
             </div>
 
-            <div class="card" style="text-align:center">
-                <div class="sentiment-bar" style="display:flex; justify-content:center; gap:15px;">
-                    <div class="sentiment-btn" onclick="notify('已反應：熱血！','success')">🔥</div>
-                    <div class="sentiment-btn" onclick="notify('已反應：觀望。','info')">🤔</div>
-                    <div class="sentiment-btn" onclick="notify('已反應：看好！','success')">🚀</div>
-                </div>
-            </div>
             <div id="votingUIContainer"></div>
         </div>
 
@@ -332,13 +331,12 @@
         const DEPLOY_BLOCK = 7000000;
         let provider, signer, userAddr, contract, onChainRep = 0, userCredits = 0, userTitles = [], isRegisteredOnChain = false, localRepBonus = 0, currentPid = null, timerInterval = null, chartInstance = null;
 
-        // --- 修復：通知系統防護邏輯與自動容器建立 ---
+        // --- 修復：通知系統防護 ---
         window.notify = (m, t) => {
             let container = document.getElementById("toast-container");
             if (!container) {
                 container = document.createElement("div");
                 container.id = "toast-container";
-                container.style.cssText = "position: fixed; bottom: 30px; right: 30px; z-index: 5000; display: flex; flex-direction: column; gap: 10px;";
                 document.body.appendChild(container);
             }
             const div = document.createElement("div");
@@ -363,10 +361,10 @@
             return Promise.race([promise, tPromise]);
         }
 
-        // --- 初始化與連線 ---
+        // --- 連線核心 ---
         async function init() {
             if (!window.ethereum) { 
-                if (!document.body) { setTimeout(init, 100); return; }
+                if (!document.getElementById("toast-container")) { setTimeout(init, 200); return; }
                 window.notify("請安裝 MetaMask 擴充功能", "error"); 
                 return; 
             }
@@ -435,7 +433,7 @@
             if(tc) tc.innerHTML = userTitles.map(t => `<span style="background:var(--p); color:white; padding:3px 10px; border-radius:50px; font-size:0.7rem; margin:2px;">${t}</span>`).join('') || '<small>尚無成就</small>';
         }
 
-        // --- 時間格式化引擎：天時分秒精準化 ---
+        // --- 時間格式化：天時分秒精準化 ---
         function formatTimeFull(seconds) {
             if (seconds <= 0) return "已截止";
             const d = Math.floor(seconds / (3600 * 24));
@@ -445,7 +443,7 @@
             return `${d}天 ${h}小時 ${m}分 ${s}秒`;
         }
 
-        // --- 核心修復：CID 圖片解析引擎 ---
+        // --- 核心修復：CID 圖片解析 ---
         function resolveCandidateImage(uid) {
             const cidRegex = /(Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{58}|bafy[a-zA-Z0-9]{40,}|bafk[a-zA-Z0-9]{40,})/;
             const match = (uid||'').match(cidRegex);
@@ -512,17 +510,19 @@
                 if(isCreator && canEdit) document.getElementById("editTopic").value = p.topic;
 
                 if(p.mode === 3) {
+                    // --- 排序模式 修復：手動綁定按鈕點擊 ---
                     container.innerHTML = `<div class="card"><h3>拖動排序選項 (第一位為首選)</h3><div id="rankedSortList" style="margin:20px 0;">${candidates.map((c, i) => `<div class="ranked-item" data-id="${i}"><div class="rank-number">${i+1}</div><div class="cand-img-wrap" style="width:40px; height:40px; margin:0;"><img src="${resolveCandidateImage(c.uid)}" class="cand-img"></div><div style="flex:1"><b>${c.name}</b></div><i class="fa-solid fa-bars" style="color:var(--muted)"></i></div>`).join('')}</div><button class="btn-success vote-submit-btn" style="width:100%; height:55px;" id="rankSubmitBtn">送出排序首選投票</button></div>`;
                     new Sortable(document.getElementById("rankedSortList"), { animation: 150, onEnd: () => document.querySelectorAll('.rank-number').forEach((el, idx) => el.innerText = idx + 1) });
                     document.getElementById("rankSubmitBtn").onclick = () => window.govVote(pid, -1, false, true);
                 } else {
+                    // --- 一般/QV/QF/權重 模式 修復 ---
                     container.innerHTML = `
-                        ${p.mode === 2 ? `<div class="card" style="border:1px solid var(--success); background:rgba(16,185,129,0.05); margin-bottom:20px; font-size:0.85rem;"><i class="fa-solid fa-calculator"></i> QF 試算：系統將依投入金額開平方根加總後平方估算配對金。</div>` : ''}
+                        ${p.mode === 2 ? `<div class="card" style="border:1px solid var(--success); background:rgba(16,185,129,0.05); margin-bottom:20px; font-size:0.85rem;"><i class="fa-solid fa-calculator"></i> QF 試算：系統將依投入 Rep 開平方根加總後平方估算。</div>` : ''}
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                             ${candidates.map((c, i) => `
                                 <div class="card" style="text-align:center">
                                     <div class="cand-img-wrap"><img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed=E'"></div>
-                                    <h3>${c.name}</h3><p>累積權重: ${c.voteWeight.toString()}</p>
+                                    <h3>${c.name}</h3><p>累計權重: ${c.voteWeight.toString()}</p>
                                     ${p.mode === 1 ? `<input type="number" id="qv-${i}" placeholder="數量" min="1" oninput="window.updateQVCost()" style="width:80px; margin-bottom:10px; text-align:center;">` : ''}
                                     <button class="vote-submit-btn" onclick="window.govVote(${pid}, ${i}, ${p.mode === 1})">${p.mode === 1 ? '執行 QV 投票' : '投下一票'}</button>
                                 </div>`).join('')}
@@ -554,10 +554,29 @@
                 overlay.style.display = "flex"; window.notify("正在處理鏈上交易...", "info");
                 const tx = await contract.castVote(pid, finalCid, val); 
                 await tx.wait(); confetti(); syncUserDashboard(); viewDetail(pid);
-            } catch (e) { window.notify("交易失敗，請檢查權限或節點", "error"); } finally { overlay.style.display = "none"; }
+            } catch (e) { window.notify("交易失敗，請檢查節點狀態", "error"); } finally { overlay.style.display = "none"; }
         };
 
-        // --- 身分更新 ---
+        // --- 幸運轉盤邏輯 (不刪減！) ---
+        window.spinWheel = function() {
+            const wheel = document.getElementById("wheel");
+            const result = document.getElementById("wheelResult");
+            if (!wheel) return;
+            
+            const deg = 1800 + Math.random() * 1800;
+            wheel.style.transform = `rotate(${deg}deg)`;
+            result.innerText = "命運旋轉中...";
+            
+            setTimeout(() => {
+                const pool = ["榮譽公約官", "治理執劍人", "民主守護者", "正義之盾", "共識大師"];
+                const win = pool[Math.floor(Math.random() * pool.length)];
+                result.innerText = "獲得稱號：【" + win + "】";
+                if(!userTitles.includes(win)) { userTitles.push(win); updateUI(); savePersistedData(); }
+                confetti();
+            }, 4000);
+        };
+
+        // --- 身分編輯與發起提案 ---
         window.openProfileModal = () => { 
             document.getElementById("editUserName").value = document.getElementById("navName").innerText.replace("...", "");
             document.getElementById("profileModal").style.display = "block"; 
@@ -569,23 +588,17 @@
             try { overlay.style.display = "flex"; const tx = await contract.register(document.getElementById("editUserName").value, document.getElementById("editUserAvatar").value || "default"); await tx.wait(); syncUserDashboard(); closeProfileModal(); window.notify("身分更新成功", "success"); } catch(e) { window.notify("失敗", "error"); } finally { overlay.style.display = "none"; }
         };
 
-        // --- 發起提案 (修復日/時/分/秒計算) ---
         window.handleCreatePoll = async () => {
             const overlay = document.getElementById("mainLoader");
             const d = parseInt(document.getElementById("pollDay").value) || 0;
             const h = parseInt(document.getElementById("pollHour").value) || 0;
             const m = parseInt(document.getElementById("pollMin").value) || 0;
             const s = parseInt(document.getElementById("pollSec").value) || 0;
-            // 由於合約傳入 uint256 秒數或分鐘，這裡統一換算為分鐘（若合約需要秒數，請在此調整計算方式）
             const totalMinutes = (d * 1440) + (h * 60) + m + (s / 60);
 
             const names = Array.from(document.querySelectorAll(".cand-name")).map(i => i.value || "匿名");
             const uids = Array.from(document.querySelectorAll(".cand-uid")).map(i => i.value || "CAND-" + Math.random().toString(36).substring(2, 6).toUpperCase());
-            try { 
-                overlay.style.display = "flex"; 
-                const tx = await contract.createPoll(document.getElementById("topic").value, document.getElementById("modeSelect").value, names, uids, Math.max(1, Math.floor(totalMinutes))); 
-                await tx.wait(); renderPolls(); window.showPage('listPage'); 
-            } catch(e) { window.notify("發起失敗", "error"); } finally { overlay.style.display = "none"; }
+            try { overlay.style.display = "flex"; const tx = await contract.createPoll(document.getElementById("topic").value, document.getElementById("modeSelect").value, names, uids, Math.max(1, Math.floor(totalMinutes))); await tx.wait(); renderPolls(); window.showPage('listPage'); } catch(e) { window.notify("發起失敗", "error"); } finally { overlay.style.display = "none"; }
         };
 
         window.addCandidateInput = () => {
@@ -594,7 +607,7 @@
             document.getElementById("candidateInputsContainer").appendChild(div);
         };
 
-        // --- 工具、匯出與遊戲化 ---
+        // --- 工具與匯出 ---
         window.handleDailyCheckIn = () => { localRepBonus += 10; updateUI(); savePersistedData(); window.notify("簽到成功！治理聲望 +10", "success"); confetti(); };
         window.handleRegisterOnChain = async () => { const overlay = document.getElementById("mainLoader"); try { overlay.style.display = "flex"; const tx = await contract.register("User", "default"); await tx.wait(); syncUserDashboard(); } finally { overlay.style.display = "none"; } };
         window.handleExportPoll = async () => { const cand = await contract.getCandidates(currentPid); let csv = "選項,權重\n"; cand.forEach(c => csv += `${c.name},${c.voteWeight}\n`); const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `UniGov_Report_${currentPid}.csv`; a.click(); };
@@ -602,7 +615,6 @@
         window.handleEditPollMetadata = async () => { const overlay = document.getElementById("mainLoader"); try { overlay.style.display = "flex"; const tx = await contract.updatePollMetadata(currentPid, document.getElementById("editTopic").value, [], []); await tx.wait(); viewDetail(currentPid); } finally { overlay.style.display = "none"; } };
         window.handleDeletePoll = async () => { if(!confirm("標記刪除？")) return; const overlay = document.getElementById("mainLoader"); try { overlay.style.display = "flex"; const p = await contract.allPolls(currentPid); const tx = await contract.updatePollMetadata(currentPid, "[DELETED] " + p.topic, [], []); await tx.wait(); renderPolls(); window.showPage('listPage'); } finally { overlay.style.display = "none"; } };
         window.handleOracleBet = () => { window.notify("預言提交成功", "success"); confetti(); };
-        window.spinWheel = function() { const deg = 1800 + Math.random() * 1800; document.getElementById("wheel").style.transform = `rotate(${deg}deg)`; setTimeout(() => { const res = ["仲裁官", "開路者", "守護者"][Math.floor(Math.random() * 3)]; document.getElementById("wheelResult").innerText = "抽中稱號："+res; if(!userTitles.includes(res)) { userTitles.push(res); updateUI(); savePersistedData(); } confetti(); }, 4000); };
         window.disconnectWallet = () => { sessionStorage.setItem('explicitLogout', 'true'); location.reload(); };
         
         function loadPersistedData() { if(!userAddr) return; const k = userAddr.toLowerCase(); localRepBonus = parseInt(localStorage.getItem(`bonus_${k}`) || "0"); userTitles = JSON.parse(localStorage.getItem(`titles_${k}`) || "[]"); }
