@@ -36,7 +36,7 @@
             --success: #10b981; --error: #ef4444; --warning: #f1c40f;
         }
 
-        * { box-sizing: border-box; transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        * { box-sizing: border-box; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text);
             margin: 0; min-height: 100vh; background-image: radial-gradient(circle at 50% -20%, #1e1b4b 0%, var(--bg) 80%);
@@ -61,11 +61,10 @@
 
         .card { background: var(--glass); border: 1px solid var(--border); border-radius: 24px; padding: 30px; margin-bottom: 20px; position: relative; overflow: hidden; }
 
-        /* 標籤與時間 */
         .status-tag { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .status-active { background: rgba(16, 185, 129, 0.2); color: var(--success); }
         .status-closed { background: rgba(148, 163, 184, 0.2); color: var(--muted); }
-        .timer-badge { font-size: 0.8rem; color: var(--warning); display: flex; align-items: center; gap: 6px; margin-top: 8px; font-family: monospace; font-weight: 700; background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); }
+        .timer-badge { font-size: 0.8rem; color: var(--warning); display: flex; align-items: center; gap: 6px; margin-top: 8px; font-family: monospace; font-weight: 700; background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); width: fit-content; }
 
         .cand-img-wrap { width: 140px; height: 140px; border-radius: 50%; border: 3px solid var(--p); display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 0 auto 15px; background: #111; position: relative; }
         .cand-img { width: 100%; height: 100%; object-fit: cover; }
@@ -84,7 +83,7 @@
         #toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
         .toast { background: #1e292b; border-left: 4px solid var(--p); color: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); animation: slideIn 0.3s ease; pointer-events: auto; }
 
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 15, 26, 0.95); z-index: 9999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 15, 26, 0.9); z-index: 6000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
         .loader { width: 48px; height: 48px; border: 5px solid #FFF; border-bottom-color: var(--p); border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
         @keyframes rotation { 0% { transform: rotate(0deg) } 100% { transform: rotate(360deg) } }
 
@@ -95,16 +94,17 @@
 
         .ranked-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 10px; cursor: grab; display: flex; align-items: center; gap: 15px; }
         .rank-number { width: 32px; height: 32px; border-radius: 50%; background: var(--p); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; }
-
+        
         input, select { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; color: white; margin-top: 5px; outline: none; }
-        .time-inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
-        .time-unit { text-align: center; }
-        .time-unit label { font-size: 0.7rem; color: var(--muted); margin-bottom: 5px; display: block; }
+        .qv-info-badge { background: rgba(241, 196, 15, 0.1); border: 1px solid var(--warning); padding: 15px; border-radius: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
 
         .modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1e293b; padding: 40px; border-radius: 24px; border: 1px solid var(--p); z-index: 8000; width: 90%; max-width: 500px; display: none; box-shadow: 0 0 100px rgba(0,0,0,1); }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 7999; display: none; backdrop-filter: blur(5px); }
 
-        .qv-info-badge { background: rgba(241, 196, 15, 0.1); border: 1px solid var(--warning); padding: 15px; border-radius: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .time-inputs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px; }
+        .time-unit { text-align: center; }
+        .time-unit label { font-size: 0.7rem; color: var(--muted); margin-bottom: 5px; display: block; }
+
         #log { background: #000; color: #10b981; font-family: monospace; padding: 20px; border-radius: 15px; height: 160px; overflow-y: auto; font-size: 13px; border: 1px solid var(--border); line-height: 1.6; }
     </style>
 </head>
@@ -115,7 +115,7 @@
     <div id="modalOverlay" class="modal-overlay" onclick="window.closeProfileModal()"></div>
     <div id="toast-container"></div>
     
-    <!-- 身分編輯 Modal -->
+    <!-- 修改身分 Modal -->
     <div id="profileModal" class="modal">
         <h2 style="margin-bottom:20px;">修改治理身分</h2>
         <label style="color:var(--muted); font-size:0.8rem;">治理暱稱</label>
@@ -129,29 +129,29 @@
     </div>
 
     <nav class="nav">
-        <div class="nav-brand" onclick="showPage('guidePage')"><i class="fa-solid fa-atom"></i> UniGov</div>
+        <div class="nav-brand" onclick="window.showPage('guidePage')"><i class="fa-solid fa-atom"></i> UniGov</div>
         <div style="display:flex; gap:8px;">
-            <button class="btn-ghost" onclick="showPage('guidePage')">引導</button>
-            <button class="btn-ghost" onclick="showPage('listPage')">大廳</button>
-            <button class="btn-ghost" onclick="showPage('modeInfoPage')">百科</button>
-            <button class="btn-ghost" onclick="showPage('statPage')">審計</button>
-            <button class="btn-ghost" onclick="showPage('wheelPage')">轉盤</button>
+            <button class="btn-ghost" onclick="window.showPage('guidePage')">引導</button>
+            <button class="btn-ghost" onclick="window.showPage('listPage')">大廳</button>
+            <button class="btn-ghost" onclick="window.showPage('modeInfoPage')">百科</button>
+            <button class="btn-ghost" onclick="window.showPage('statPage')">審計</button>
+            <button class="btn-ghost" onclick="window.showPage('wheelPage')">幸運轉盤</button>
         </div>
         <div id="userSection" style="margin-left:auto; display:flex; align-items:center; gap:15px;">
-            <div id="userInfo" class="user-chip" style="display:none" onclick="showPage('profilePage')">
+            <div id="userInfo" class="user-chip" style="display:none" onclick="window.showPage('profilePage')">
                 <img id="navAvatar" src="" class="avatar-nav">
                 <span id="navName">...</span>
                 <span id="navRep" style="color:var(--warning); font-weight:bold;">Rep: 0</span>
             </div>
             <button id="connBtn" onclick="window.connectWalletFlow()"><i class="fa-solid fa-wallet"></i> 連接錢包</button>
             <button id="discoBtn" class="btn-ghost" style="display:none" onclick="window.disconnectWallet()"><i class="fa-solid fa-right-from-bracket"></i></button>
-            <button onclick="showPage('createPage')"><i class="fa-solid fa-plus"></i> 提案</button>
+            <button onclick="window.showPage('createPage')"><i class="fa-solid fa-plus"></i> 提案</button>
         </div>
     </nav>
 
     <div class="container">
 
-        <!-- 1. 引導頁面 (Onboarding 1-2-3) -->
+        <!-- 1. 引導頁面 -->
         <div id="guidePage" class="page active">
             <div class="card" style="text-align:center; padding:80px 40px;">
                 <h1>UniGov 治理生態中樞</h1>
@@ -161,54 +161,51 @@
                     <div class="card"><b style="color:var(--p); font-size:1.3rem;">02</b><h3>參與共識</h3><p>提供五大計票模式，設定精準決策週期。數據鏈上存證，秒級倒數。</p></div>
                     <div class="card"><b style="color:var(--p); font-size:1.3rem;">03</b><h3>累積榮譽</h3><p>透過投票與簽到提升 Rep，在成就牆展示您的去中心化治理資歷。</p></div>
                 </div>
-                <button style="margin:40px auto; padding:18px 50px;" onclick="showPage('listPage')">立即開啟共識之旅</button>
+                <button style="margin:40px auto; padding:18px 50px;" onclick="window.showPage('listPage')">開啟共識之旅</button>
             </div>
         </div>
 
-        <!-- 2. 大廳頁面 (搜尋、精準倒數) -->
+        <!-- 2. 大廳頁面 -->
         <div id="listPage" class="page">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
                 <h1>治理議案中心</h1>
-                <input type="text" id="searchBar" onkeyup="filterPolls()" placeholder="搜尋標題、UID 或發起位址..." style="width:350px;">
+                <input type="text" id="searchBar" onkeyup="window.filterPolls()" placeholder="搜尋標題、UID 或發起位址..." style="width:350px;">
             </div>
             <div id="pollGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap:24px;"></div>
         </div>
 
-        <!-- 3. 審計看板 (日誌匯出) -->
+        <!-- 3. 審計看板 -->
         <div id="statPage" class="page">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h1>治理趨勢審計 (鏈上實時事件)</h1>
                 <button class="btn-ghost" onclick="window.handleExportAudit()"><i class="fa-solid fa-download"></i> 匯出審計日誌 CSV</button>
             </div>
             <div class="card" style="min-height: 350px;"><canvas id="mainChart" height="150"></canvas></div>
-            <div id="log">> 系統狀態：正在索引區塊鏈實時事件流，確保數據具備 Traceability...</div>
+            <div id="log">> 系統狀態：正在監聽區塊鏈實時事件流...</div>
         </div>
 
-        <!-- 4. 幸運轉盤 (2.0 完全體) -->
+        <!-- 4. 幸運轉盤 -->
         <div id="wheelPage" class="page" style="text-align:center">
             <h1>治理運勢轉盤 2.0</h1>
-            <p style="color:var(--muted); margin-bottom:20px;">每日可抽選專屬治理稱號，稱號將保存在個人成就收藏室。</p>
-            <div class="wheel-wrap">
-                <div class="wheel-pointer"></div>
-                <div id="wheel"></div>
-            </div>
+            <p style="color:var(--muted); margin-bottom:20px;">每日抽選專屬治理稱號，保存在個人成就室。</p>
+            <div class="wheel-wrap"><div class="wheel-pointer"></div><div id="wheel"></div></div>
             <button style="margin:30px auto;" onclick="window.spinWheel()">啟動轉盤</button>
             <h2 id="wheelResult" style="color:var(--warning); min-height:40px; font-weight:800;"></h2>
         </div>
 
-        <!-- 5. 百科頁面 (1-5 編號補全) -->
+        <!-- 5. 百科頁面 (1-5 編號) -->
         <div id="modeInfoPage" class="page">
             <h1>治理模式百科全書</h1>
             <div style="display:grid; gap:20px;">
-                <div class="card"><h3>1. 一般模式 (Standard)</h3><p>一人一票，最純粹的民主基準。公式：$得票 = \sum 選民數$</p></div>
-                <div class="card"><h3>2. 平方投票 (Quadratic)</h3><p>成本隨票數平方增長。公式：$消耗 = 票數^2$。有效防止大戶霸凌。</p></div>
+                <div class="card"><h3>1. 一般模式 (Standard)</h3><p>一人一票，最純粹的民主。公式：$得票 = \sum 選民數$</p></div>
+                <div class="card"><h3>2. 平方投票 (Quadratic)</h3><p>成本隨票數平方增長。公式：$消耗 = 票數^2$。防止大戶霸凌。</p></div>
                 <div class="card"><h3>3. 平方募資 (QF)</h3><p>重視人數而非金額。公式：$獎勵 \propto (\sum \sqrt{捐助})^2$。優化預算分配。</p></div>
                 <div class="card"><h3>4. 偏好排序 (Ranked Choice)</h3><p>拖曳排序選項，直到選出大眾公約數最高者。消除棄保效應。</p></div>
                 <div class="card"><h3>5. 權重投票 (Weighted Voting)</h3><p>治理權依據代幣持倉或 Rep 權重決定。公式：$得票 = 票數 \times 權重$</p></div>
             </div>
         </div>
 
-        <!-- 6. 個人面板 (簽到大一統 & 身分修改) -->
+        <!-- 6. 個人面板 -->
         <div id="profilePage" class="page">
             <div class="card" style="max-width:650px; margin:0 auto; text-align:center">
                 <h2>個人治理者儀表板</h2>
@@ -244,7 +241,7 @@
             </div>
         </div>
 
-        <!-- 7. 發起提案頁面 (UID 自動補全 & 日/時/分/秒) -->
+        <!-- 7. 發起提案頁面 (日/時/分/秒) -->
         <div id="createPage" class="page">
             <div class="card" style="max-width:800px; margin:0 auto">
                 <h2>部署鏈上治理議案</h2>
@@ -254,16 +251,16 @@
                 <div style="margin-top:15px;">
                     <label>治理模式 (1~5 模式)</label>
                     <select id="modeSelect">
-                        <option value="0">一般模式 (Standard)</option>
-                        <option value="1">平方投票 (Quadratic)</option>
-                        <option value="2">平方募資 (QF Matching)</option>
-                        <option value="3">偏好排序 (Ranked Choice)</option>
-                        <option value="4">權重投票 (Weighted Voting)</option>
+                        <option value="0">0 - 一般模式 (Standard)</option>
+                        <option value="1">1 - 平方投票 (Quadratic)</option>
+                        <option value="2">2 - 平方募資 (QF Matching)</option>
+                        <option value="3">3 - 偏好排序 (Ranked Choice)</option>
+                        <option value="4">4 - 權重投票 (Weighted Voting)</option>
                     </select>
                 </div>
 
                 <div style="margin-top:15px;">
-                    <label>持續時間設置</label>
+                    <label>持續時間設置 (天/時/分/秒)</label>
                     <div class="time-inputs">
                         <div class="time-unit"><label>日</label><input type="number" id="pollDay" value="1" min="0"></div>
                         <div class="time-unit"><label>時</label><input type="number" id="pollHour" value="0" min="0" max="23"></div>
@@ -280,10 +277,10 @@
             </div>
         </div>
 
-        <!-- 8. 詳情頁面 (倒數、編輯鎖、匯出、QV/Rank修復) -->
+        <!-- 8. 詳情頁面 (修復投票按鈕) -->
         <div id="detailPage" class="page">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <button class="btn-ghost" onclick="showPage('listPage')"><i class="fa-solid fa-arrow-left"></i> 返回列表</button>
+                <button class="btn-ghost" onclick="window.showPage('listPage')"><i class="fa-solid fa-arrow-left"></i> 返回列表</button>
                 <button class="btn-ghost" onclick="window.handleExportPoll()"><i class="fa-solid fa-file-export"></i> 匯出計票報告</button>
             </div>
             <div id="pollInfo" class="card" style="border-left: 8px solid var(--p);"></div>
@@ -310,13 +307,6 @@
                 </div>
             </div>
 
-            <div class="card" style="text-align:center">
-                <div class="sentiment-bar" style="display:flex; justify-content:center; gap:15px;">
-                    <div class="sentiment-btn" onclick="notify('已標記熱血！','success')">🔥</div>
-                    <div class="sentiment-btn" onclick="notify('已標記觀望。','info')">🤔</div>
-                    <div class="sentiment-btn" onclick="notify('已標記看好！','success')">🚀</div>
-                </div>
-            </div>
             <div id="votingUIContainer"></div>
         </div>
 
@@ -341,7 +331,7 @@
         const DEPLOY_BLOCK = 7000000;
         let provider, signer, userAddr, contract, onChainRep = 0, userCredits = 0, userTitles = [], isRegisteredOnChain = false, localRepBonus = 0, currentPid = null, timerInterval = null, chartInstance = null;
 
-        // --- 全域互動修復：通知系統防護 ---
+        // --- 修復：通知系統防護 ---
         window.notify = (m, t) => {
             let container = document.getElementById("toast-container");
             if (!container) {
@@ -402,7 +392,7 @@
                 contract.on("PollCreated", renderPolls);
                 contract.on("VoteCast", () => { if(currentPid !== null) viewDetail(currentPid); });
                 window.notify("錢包連線成功", "success");
-            } catch (e) { window.notify("連線異常", "error"); }
+            } catch (e) { window.notify("連線失敗", "error"); }
         }
         window.connectWalletFlow = async function() {
             try { sessionStorage.removeItem('explicitLogout'); const accs = await provider.send("eth_requestAccounts", []); if(accs.length > 0) await setupSession(accs[0]); } catch (e) {}
@@ -443,7 +433,7 @@
             if(tc) tc.innerHTML = userTitles.map(t => `<span style="background:var(--p); color:white; padding:3px 10px; border-radius:50px; font-size:0.7rem; margin:2px;">${t}</span>`).join('') || '<small>尚無成就</small>';
         }
 
-        // --- 時間格式化引擎 ---
+        // --- 時間格式化 ---
         function formatTimeFull(seconds) {
             if (seconds <= 0) return "已截止";
             const d = Math.floor(seconds / (3600 * 24));
@@ -453,8 +443,8 @@
             return `${d}天 ${h}小時 ${m}分 ${s}秒`;
         }
 
-        // --- CID 圖片解析 ---
-        function resolveCandidateImage(uid) {
+        // --- 核心修復：CID 解析與 Identicon 備援 ---
+        window.resolveCandidateImage = function(uid) {
             const cidRegex = /(Qm[1-9A-HJ-NP-Za-km-z]{44}|b[a-z2-7]{58}|bafy[a-zA-Z0-9]{40,}|bafk[a-zA-Z0-9]{40,})/;
             const match = (uid||'').match(cidRegex);
             return match ? `https://ipfs.io/ipfs/${match[0]}` : `https://api.dicebear.com/7.x/identicon/svg?seed=${uid||'U'}`;
@@ -520,17 +510,17 @@
 
                 if(p.mode === 3) {
                     // --- 排序模式 修復 ---
-                    container.innerHTML = `<div class="card"><h3>拖動排序選項 (第一位為首選)</h3><div id="rankedSortList" style="margin:20px 0;">${candidates.map((c, i) => `<div class="ranked-item" data-id="${i}"><div class="rank-number">${i+1}</div><div class="cand-img-wrap" style="width:40px; height:40px; margin:0;"><img src="${resolveCandidateImage(c.uid)}" class="cand-img"></div><div style="flex:1"><b>${c.name}</b></div><i class="fa-solid fa-bars" style="color:var(--muted)"></i></div>`).join('')}</div><button class="btn-success vote-submit-btn" style="width:100%; height:55px;" id="rankSubmitBtn">送出排序首選投票</button></div>`;
+                    container.innerHTML = `<div class="card"><h3>拖動排序選項 (第一位為首選)</h3><div id="rankedSortList" style="margin:20px 0;">${candidates.map((c, i) => `<div class="ranked-item" data-id="${i}"><div class="rank-number">${i+1}</div><div class="cand-img-wrap" style="width:40px; height:40px; margin:0;"><img src="${window.resolveCandidateImage(c.uid)}" class="cand-img"></div><div style="flex:1"><b>${c.name}</b></div><i class="fa-solid fa-bars" style="color:var(--muted)"></i></div>`).join('')}</div><button class="btn-success vote-submit-btn" style="width:100%; height:55px;" id="rankSubmitBtn">送出排序首選投票</button></div>`;
                     new Sortable(document.getElementById("rankedSortList"), { animation: 150, onEnd: () => document.querySelectorAll('.rank-number').forEach((el, idx) => el.innerText = idx + 1) });
                     document.getElementById("rankSubmitBtn").onclick = () => window.govVote(pid, -1, false, true);
                 } else {
                     // --- 一般/QV/QF/權重 模式 (修復 onclick `${i}`) ---
                     container.innerHTML = `
-                        ${p.mode === 2 ? `<div class="card" style="border:1px solid var(--success); background:rgba(16,185,129,0.05); margin-bottom:20px; font-size:0.85rem;"><i class="fa-solid fa-calculator"></i> QF 試算：系統將依 Rep 平方根加總後平方估算配對金。</div>` : ''}
+                        ${p.mode === 2 ? `<div class="card" style="border:1px solid var(--success); background:rgba(16,185,129,0.05); margin-bottom:20px; font-size:0.85rem;"><i class="fa-solid fa-calculator"></i> QF 試算：系統將依投入 Rep 開平方根加總後平方估算配對金。</div>` : ''}
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                             ${candidates.map((c, i) => `
                                 <div class="card" style="text-align:center">
-                                    <div class="cand-img-wrap"><img src="${resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed=E'"></div>
+                                    <div class="cand-img-wrap"><img src="${window.resolveCandidateImage(c.uid)}" class="cand-img" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed=E'"></div>
                                     <h3>${c.name}</h3><p>累積權重: ${c.voteWeight.toString()}</p>
                                     ${p.mode === 1 ? `<input type="number" id="qv-${i}" placeholder="數量" min="1" oninput="window.updateQVCost()" style="width:80px; margin-bottom:10px; text-align:center;">` : ''}
                                     <button class="vote-submit-btn" onclick="window.govVote(${pid}, ${i}, ${p.mode === 1})">${p.mode === 1 ? '執行 QV 投票' : '投下一票'}</button>
@@ -566,7 +556,7 @@
             } catch (e) { window.notify("交易失敗，請檢查權限或節點狀態", "error"); } finally { overlay.style.display = "none"; }
         };
 
-        // --- 幸運轉盤邏輯 (不刪減！) ---
+        // --- 幸運轉盤 ---
         window.spinWheel = function() {
             const wheel = document.getElementById("wheel");
             const result = document.getElementById("wheelResult");
@@ -583,7 +573,7 @@
             }, 4000);
         };
 
-        // --- 身分更新與發起 ---
+        // --- 身分編輯與發起 ---
         window.openProfileModal = () => { 
             document.getElementById("editUserName").value = document.getElementById("navName").innerText.replace("...", "");
             document.getElementById("profileModal").style.display = "block"; 
@@ -605,7 +595,8 @@
 
             const names = Array.from(document.querySelectorAll(".cand-name")).map(i => i.value || "匿名");
             const uids = Array.from(document.querySelectorAll(".cand-uid")).map(i => i.value || "CAND-" + Math.random().toString(36).substring(2, 6).toUpperCase());
-            try { overlay.style.display = "flex"; const tx = await contract.createPoll(document.getElementById("topic").value, document.getElementById("modeSelect").value, names, uids, Math.max(1, Math.floor(totalMinutes))); await tx.wait(); renderPolls(); window.showPage('listPage'); } catch(e) { window.notify("發起失敗", "error"); } finally { overlay.style.display = "none"; }
+            const mode = parseInt(document.getElementById("modeSelect").value);
+            try { overlay.style.display = "flex"; const tx = await contract.createPoll(document.getElementById("topic").value, mode, names, uids, Math.max(1, Math.floor(totalMinutes))); await tx.wait(); renderPolls(); window.showPage('listPage'); } catch(e) { window.notify("發起失敗", "error"); } finally { overlay.style.display = "none"; }
         };
 
         window.addCandidateInput = () => {
@@ -640,7 +631,7 @@
                 chartInstance.update();
             } catch(e) {}
         }
-        function initChartFrame() { const ctx = document.getElementById('mainChart').getContext('2d'); if (chartInstance) chartInstance.destroy(); chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['日前','昨日','今日'], datasets: [{ label: '活躍度', data: [0, 0, 0], borderColor: '#6366f1', fill: true, tension: 0.4 }] }, options: { plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#94a3b8' } }, x: { ticks: { color: '#94a3b8' } } } } }); }
+        function initChartFrame() { const ctx = document.getElementById('mainChart').getContext('2d'); if (chartInstance) chartInstance.destroy(); chartInstance = new Chart(ctx, { type: 'line', data: { labels: ['日前','昨日','今日'], datasets: [{ label: '全網活躍度', data: [0, 0, 0], borderColor: '#6366f1', fill: true, tension: 0.4 }] }, options: { plugins: { legend: { labels: { color: '#fff' } } }, scales: { y: { ticks: { color: '#94a3b8' } }, x: { ticks: { color: '#94a3b8' } } } } }); }
 
         window.onload = init;
     </script>
